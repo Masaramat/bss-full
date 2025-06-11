@@ -1,0 +1,136 @@
+/* tailwind.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Max container width */
+  .max-container {
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  /* Data table styles */
+  div.dataTables_wrapper div.dataTables_length select {
+    @apply text-center text-white;
+  }
+
+  table.dataTable {
+    @apply  !important;
+  }
+
+  .dataTables_wrapper .dataTables_filter {
+    @apply text-right;
+  }
+
+  .dataTables_wrapper button {
+    @apply float-left, bg-secondary text-white;
+  }
+
+  /* Table row styles */
+  .table-row {
+    @apply border border-gray-300 text-sm hover:bg-slate-200;
+  }
+
+  /* Table header styles */
+  .table-header-group {
+    @apply bg-secondary text-white text-sm;
+  }
+
+  .table {
+    @apply border border-secondary;
+  }
+
+  /* Details paragraph styles */
+  .details-p {
+    @apply p-2 font-medium font-montserrat;
+  }
+
+  /* Input styles */
+  .input {
+    @apply sm:flex-1 bg-transparent max-sm:w-full text-base leading-normal text-slate-gray pl-1 max-sm:p-2 outline-none border-none border max-sm:border-slate-gray max-sm:rounded-full my-2;
+  }
+
+  /* Label styles */
+  .label {
+    @apply bg-gray-600 w-24 text-white font-bold pl-3 pt-1.5 rounded-l-full;
+  }
+
+  /* Form control styles */
+  .form-control {
+    @apply block mt-2 w-full placeholder-gray-400/70 dark:placeholder-gray-200 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-700 focus:border-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-40 dark:border-gray-600 dark:bg-gray-500 dark:text-white dark:focus:border-blue-300;
+  }
+
+  /* Form label styles */
+  .form-label {
+    @apply block text-gray-600 mt-2 font-bold dark:text-gray-700;
+  }
+}
+
+@layer utilities {
+  /* Padding utilities */
+  .padding {
+    @apply sm:px-16 px-8 sm:py-24 py-12;
+  }
+
+  .padding-x {
+    @apply sm:px-16 px-8;
+  }
+
+  .padding-y {
+    @apply sm:py-24 py-12;
+  }
+
+  .padding-l {
+    @apply sm:pl-16 pl-8;
+  }
+
+  .padding-r {
+    @apply sm:pr-16 pr-8;
+  }
+
+  .padding-t {
+    @apply sm:pt-24 pt-12;
+  }
+
+  .padding-b {
+    @apply sm:pb-24 pb-12;
+  }
+
+  /* Info text styles */
+  .info-text {
+    @apply font-montserrat text-slate-gray text-lg leading-7;
+  }
+
+  /* Link item styles */
+  .linkItem {
+    @apply text-slate-300 hover:text-white  md:flex justify-between ;
+  }
+
+  .linkLinkitem{
+    @apply  mb-4 m-1 md:mb-8;
+  }
+
+  /* List item styles */
+  .listItem {
+    @apply max-sm:flex-1 block max-sm:items-center max-sm:justify-center text-gray-700 hover:text-black hover:cursor-pointer text-xs p-2 hover:bg-slate-300;
+  }
+
+  /* User nav link item styles */
+  .userNavLinkItem {
+    @apply my-2 text-sm text-slate-700 px-6 hover:text-white hover:cursor-pointer hover:bg-primary;
+  }
+
+  /* Form group styles */
+  .form-group {
+    @apply col-span-1 max-sm:col-span-2 p-2;
+  }
+
+  .sidebarLinkItem{
+    @apply font-sans font-bold hover:cursor-pointer text-xs md:text-sm flex flex-col items-center md:flex md:flex-row md:justify-center
+  }
+}
+
+
+

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  bss-service:
+    image: manguti/bss-service:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://4.234.177.38:3306/bss_db?useSSL=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=bss
+      - SPRING_DATASOURCE_PASSWORD=e1eF@rnt2015
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_FLYWAY_REPAIR_ON_MIGRATE=true
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=INFO
+      - LOGGING_LEVEL_ORG_HIBERNATE=INFO
+    restart: always
+
+  bss-ui:
+    image: manguti/bss-ui:latest
+    ports:
+      - "80:80"
+    restart: always

@@ -1,0 +1,26 @@
+services:
+  loan-processor:
+    image: manguti/loan-processor:latest
+    container_name: bss-loan-processor
+    environment:
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false
+      - SPRING_APPLICATION_NAME=loan-processor
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  uploads:

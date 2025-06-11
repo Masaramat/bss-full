@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: loan-processor
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/bss_db?useSSL=false&createDatabaseIfNotExist=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+
+  flyway:
+    validate-on-migrate: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    root: INFO
+
+    org:
+      spring:
+        framework:
+          web: INFO
+      hibernate: INFO
