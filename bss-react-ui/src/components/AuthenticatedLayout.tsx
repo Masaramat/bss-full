@@ -27,13 +27,13 @@ const AuthenticatedLayout = () => {
   }
 
   return (
-    <div className="authenticated-layout grid grid-cols-6">
+    <div className="authenticated-layout grid grid-cols-6 ">
       <div className='col-span-1'>
         <Sidebar />
       </div>
-      <div className='col-span-5 bg-slate-200 dark:bg-slate-300 dark:text-slate-900'>
+      <div className='col-span-5 bg-white dark:bg-slate-300 dark:text-slate-900'>
         <Nav />
-        <main className="content font-nunito pb-14">
+        <main className="content font-nunito pb-14 ">
           <Outlet />
         </main>
         <Footer />

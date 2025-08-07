@@ -69,7 +69,7 @@ const ExpectedRepayments = () => {
         ).then(response => {
             if(response?.status === 200){
                 setIsPaying(false);                
-                toast.success("Repayment successfull");  
+                toast.success("Repayment done successfully");
                 window.location.reload();
                 
             }
@@ -108,6 +108,10 @@ const ExpectedRepayments = () => {
                     <tr>
                         <th className='w-2'>ID</th>
                         <th>Total Amount</th>
+                        <th>Total Due</th>
+                        <th>Total Paid</th>
+                        <th>Total Interest Paid</th>
+                        <th>Customer</th>
                         <th>Status</th>
                         <th>Days Overdue</th>
                         <th>Maturity</th>
@@ -118,6 +122,10 @@ const ExpectedRepayments = () => {
                         <tr key={repayment.id} className="table-row">
                             <td className='w-2'>{index + 1}</td>
                             <td>{formatCurrency(repayment.total)}</td>
+                            <td>{formatCurrency(repayment.totalDue)}</td>
+                            <td>{formatCurrency(repayment.totalPaid)}</td>
+                            <td>{formatCurrency(repayment.totalInterestPaid)}</td>
+                            <td>{repayment?.application?.customer?.name}</td>
                             <td>{repayment?.status === "DEFAULT" ? "due" : "pending"}</td>
                             <td>{repayment?.daysOverdue ? repayment?.daysOverdue : 0}</td>
                             <td>{formatDate(String(repayment.maturityDate))}</td>

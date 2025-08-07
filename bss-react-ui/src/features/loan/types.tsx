@@ -4,6 +4,7 @@ import { Customer } from "../customer/types";
 import { Group } from "../group/types";
 
 export interface LoanApplication{
+    daysOverdue?: number;
     id?: number;
     amount: number;
     amountInWords: string;
@@ -39,6 +40,9 @@ export interface Repayment{
     paymentDate: Date;
     daysOverdue: number;
     status: string;
+    totalDue: number;
+    totalPaid: number;
+    totalInterestPaid: number;
     application: LoanApplication;
 }
 

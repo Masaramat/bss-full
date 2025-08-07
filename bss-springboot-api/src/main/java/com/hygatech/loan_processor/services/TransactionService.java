@@ -9,13 +9,18 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -27,59 +32,99 @@ public class TransactionService {
 
     private final UserRepository userRepository;
 
-    public void createTransaction(Account account, String description, Double amount, String trxNo){
+    public void createTransaction(Account account, String description, BigDecimal amount, String trxNo){
         Transaction transaction = new Transaction();
         transaction.setAccount(account);
         transaction.setDescription(description);
         transaction.setAmount(amount);
         transaction.setTrxNo(trxNo);
+        transaction.setTrxDate(LocalDateTime.now());
         repository.save(transaction);
     }
 
-    public Transaction create(TransactionDto transactionDto){
+    public Transaction create(TransactionDto transactionDto) {
+        log.info("Creating transaction: {}", transactionDto);
         String trxNo = GeneralUtils.generateTransactionNumber();
-        System.out.println("TransactionDto: " + transactionDto);
-        System.out.println("Transaction N");
         Set<ConstraintViolation<TransactionDto>> violations = validator.validate(transactionDto);
-        if (!violations.isEmpty()){
+        if (!violations.isEmpty()) {
             throw new ConstraintViolationException(violations);
         }
+
         Account updateAccount = getAccount(transactionDto.getAccountId());
+        if (transactionDto.getUserId() != null) {
+            User user = getUser(transactionDto.getUserId());
+            transactionDto.setUser(user);
+        }
+
+        if (transactionDto.getTrxType() == TransactionType.credit && updateAccount.getAccountType() == AccountType.ADASHE) {
+            long noOfDays = transactionDto.getNoOfDays() != 0 ? transactionDto.getNoOfDays() : 1;
+            AdasheSetup adasheSetup = getRecentAdasheSetUp();
+
+            BigDecimal dailyAmount = transactionDto.getAmount();
+            if (dailyAmount.compareTo(adasheSetup.getMinimumDeposit()) < 0) {
+                throw new ObjectNotFoundException("Deposit insufficient");
+            }
+
+            List<Transaction> transactions = new ArrayList<>();
+
+            List<Transaction> finalTransactions = transactions;
+            transactions = Stream.iterate(LocalDateTime.now(), date -> date.minusDays(1))
+                    .filter(date -> date.getDayOfWeek() != DayOfWeek.SUNDAY)
+                    .limit(noOfDays)
+                    .map(date -> {
+                        Transaction transaction = new Transaction();
+                        transaction.setTrxNo(trxNo + "-" + (finalTransactions.size() + 1));
+                        transaction.setDescription(transactionDto.getDescription() + " (Day " + (finalTransactions.size() + 1) + ")");
+                        transaction.setAccount(updateAccount);
+                        transaction.setUser(transactionDto.getUserId() != null ? getUser(transactionDto.getUserId()) : null);
+                        transaction.setAmount(dailyAmount);
+                        transaction.setTrxDate(date);
+                        return transaction;
+                    })
+                    .collect(Collectors.toList());
+
+            updateAccount.setBalance(updateAccount.getBalance().add(dailyAmount.multiply(BigDecimal.valueOf(noOfDays))));
+            accountRepository.save(updateAccount);
+
+
+            List<Transaction> savedTransactions = repository.saveAll(transactions);
+            log.info("Save Transactions {}", savedTransactions);
+
+            return savedTransactions.getFirst();
+        }
+
+
         Transaction transaction = new Transaction();
         transaction.setTrxNo(trxNo);
         transaction.setDescription(transactionDto.getDescription());
+        transaction.setTrxDate(LocalDateTime.now());
         transaction.setAccount(updateAccount);
-        if(transactionDto.getUserId() != null){
-            User user = getUser(transactionDto.getUserId());
-            transaction.setUser(user);
-        }
+        transaction.setUser(transactionDto.getUserId() != null ? getUser(transactionDto.getUserId()) : null);
+
+        BigDecimal commission = transactionDto.getCommissionAmount() != null ? transactionDto.getCommissionAmount() : BigDecimal.ZERO;
 
 
-        if(transactionDto.getTrxType() == TransactionType.credit){
-            if (updateAccount.getAccountType() == AccountType.ADASHE){
-                AdasheSetup adasheSetup = getRecentAdasheSetUp();
-                if (transactionDto.getAmount() < adasheSetup.getMinimumDeposit()){
-                    throw new ObjectNotFoundException("Deposit insufficient");
-                }
-            }
+        if (transactionDto.getTrxType() == TransactionType.credit) {
             transaction.setAmount(transactionDto.getAmount());
-            updateAccount.setBalance(updateAccount.getBalance() + transactionDto.getAmount());
-        }else if(transactionDto.getTrxType() == TransactionType.debit){
-            if(updateAccount.getAccountType() == AccountType.ADASHE){
-                calculateCommission(updateAccount, transactionDto.getAmount(), trxNo);
+            updateAccount.setBalance(updateAccount.getBalance().add(transactionDto.getAmount()));
+        } else if (transactionDto.getTrxType() == TransactionType.debit) {
+            if (updateAccount.getAccountType() == AccountType.ADASHE) {
+                if(commission.compareTo(BigDecimal.ZERO) == 0) {
+                    throw new IllegalArgumentException("Commission amount is null");
+                }
+                saveCommission(updateAccount, transactionDto.getCommissionAmount(), trxNo);
             }
-
-            if (transactionDto.getAmount() > updateAccount.getBalance()){
+            if ((transactionDto.getAmount().add(commission)).compareTo(updateAccount.getBalance()) > 0) {
                 throw new ObjectNotFoundException("Insufficient Balance");
             }
-            transaction.setAmount(-transactionDto.getAmount());
-            updateAccount.setBalance(updateAccount.getBalance() - transactionDto.getAmount());
+            transaction.setAmount(BigDecimal.ZERO.subtract(transactionDto.getAmount()));
+            updateAccount.setBalance(updateAccount.getBalance().subtract((transactionDto.getAmount().add(commission))));
         }
 
         accountRepository.save(updateAccount);
-        System.out.println(updateAccount);
         return repository.save(transaction);
     }
+
 
     private Account getAccount(Long id){
         return accountRepository.findById(id).orElseThrow(() -> new ObjectNotFoundException("Account not found"));
@@ -89,73 +134,19 @@ public class TransactionService {
         return adasheSetupRepository.findFirstByOrderByIdDesc().orElseThrow(() -> new ObjectNotFoundException("Setup not found"));
     }
 
-    private AdasheCommission getLastAdasheCommissionPaid(Long accountId){
-        return adasheCommissionRepository.findFirstByAccountIdOrderByIdDesc(accountId).orElse(null);
-    }
-
-    private Transaction getLastFirstDeposit(Long accountId){
-        return repository.findFirstByAccountIdAndAmountGreaterThanOrderByIdAsc(accountId, 0.00).orElseThrow(() -> new ObjectNotFoundException("No deposit has been made on this account. Insufficient funds"));
-    }
-
     private User getUser(Long userId){
         return userRepository.findById(userId).orElse(null);
     }
 
-    private void calculateCommission(Account account, Double amount, String trxId) {
-        LocalDateTime lastCommissionDate;
-        double notCommissionedSavings;
-        Transaction firstDeposit;
-
-        // Determine the last commission date
-        if (getLastAdasheCommissionPaid(account.getId()) == null) {
-            firstDeposit = getLastFirstDeposit(account.getId());
-            lastCommissionDate = firstDeposit.getTrxDate();
-        } else {
-            lastCommissionDate = getLastAdasheCommissionPaid(account.getId()).getTrxDate();
-        }
-
-        // Calculate the sum of deposits since the last commission
-        notCommissionedSavings = repository.findSumOfDepositsByAccountIdAndTrxDateGreaterThanEqual(account, lastCommissionDate);
-        long daysNotCommissioned = Duration.between(lastCommissionDate, LocalDateTime.now()).toDays();
-
-        // Prevent division by zero
-        if (daysNotCommissioned <= 0) {
-            throw new IllegalArgumentException("Days not commissioned must be greater than zero.");
-        }
-
-        // Calculate average daily savings
-        double averageDailySavings = notCommissionedSavings / daysNotCommissioned;
-
-        // Calculate commission days
-        int commissionDays = (int) Math.ceil(amount / averageDailySavings);
-
-        // Calculate the commission amount
-        double commission = calculateCommission(amount, commissionDays);
-
-        // Create and save the AdasheCommission record
+    private void saveCommission(Account account, BigDecimal amount, String trxId) {
         AdasheCommission adasheCommission = new AdasheCommission();
         adasheCommission.setAccount(account);
-        adasheCommission.setAmount(commission);
+        adasheCommission.setAmount(amount);
         adasheCommission.setTrxId(trxId);
-        adasheCommission.setTrxDate(lastCommissionDate.plusDays(commissionDays));
-
+        adasheCommission.setTrxDate(LocalDateTime.now());
         adasheCommissionRepository.save(adasheCommission);
     }
 
-    private double calculateCommissionRate(int daysSaved, double baseCommissionRate) {
-        // Calculate daily rate
-        double dailyRate = baseCommissionRate / 30;
-        // Return the adjusted rate for the given days
-        return dailyRate * daysSaved;
-    }
-
-    private double calculateCommission(double amount, int daysSaved) {
-        double baseCommissionRate = 3.33;
-        // Calculate the adjusted commission rate
-        double adjustedRate = calculateCommissionRate(daysSaved, baseCommissionRate);
-        // Return the commission amount based on the adjusted rate
-        return amount * (adjustedRate / 100);
-    }
 
 }
 

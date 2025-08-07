@@ -35,4 +35,6 @@ public interface LoanRepaymentRepository extends JpaRepository<LoanRepayment, Lo
             "GROUP BY MONTH(lr.paymentDate)")
     List<MonthlyRepaymentDTO> findMonthlyInterestByYear(@Param("year") int year);
 
+    List<LoanRepayment> findLoanRepaymentsByApplicationIdAndStatusIn(Long applicationId, List<RepaymentStatus> statuss);
+
 }

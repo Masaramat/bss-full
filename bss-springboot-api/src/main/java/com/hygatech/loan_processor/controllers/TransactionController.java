@@ -46,8 +46,8 @@ public class TransactionController {
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+//        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
 
-        return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        return null;
     }
 }

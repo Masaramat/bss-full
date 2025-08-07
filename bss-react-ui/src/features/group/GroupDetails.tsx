@@ -23,10 +23,10 @@ const GroupDetails = () => {
         setIsLoading(true);
         const fetchData = async () => {
             try {
-                let response = await axios.get(`${APP_URL}/group/${groupId}`);
+                const response = await axios.get(`${APP_URL}/group/${groupId}`);
                 setGroup(response?.data);
                 setIsLoading(false);
-            } catch (error:any) {
+            } catch (error:unknown) {
                 handleError(error, navigate);
             }
         };
@@ -95,16 +95,16 @@ const GroupDetails = () => {
                             </thead>
                             <tbody>
                                 {group?.members && group.members.map((loan: LoanApplication, index: number) => {
-                                    const loanAccount = loan.customer.accounts?.find(account => account.loanId === loan.id);
+                                    const loanAccount = loan?.customer?.accounts?.find(account => account.loanId === loan.id);
                                     return (
                                         <tr key={loan.id} className="table-row">
                                             <td className='w-2'>{index + 1}</td>
-                                            <td>{loan.customer.name}</td>
+                                            <td>{String(loan?.customer?.name)}</td>
                                             <td>{formatCurrency(loan.amount)}</td>
                                             <td>{loanAccount?.balance ? formatCurrency(loanAccount?.balance) : 0.00}</td>
                                             <td>{loan.disbursedAt ? formatDate(String(loan.disbursedAt)) : "N/A"}</td>
                                             <td>{loan.maturity ? formatDate(String(loan.maturity)) : "N/A"}</td>
-                                            <td>{capitalizeFirstLetter(loan.status)}</td>
+                                            <td>{capitalizeFirstLetter(String(loan?.status))}</td>
                                             <td>
                                                 <Link to={`/customer/${loan.id}`} className="text-[12px] bg-primary-blue hover:bg-primary text-white font-bold p-1 px-3 rounded-lg">open</Link>
                                             </td>

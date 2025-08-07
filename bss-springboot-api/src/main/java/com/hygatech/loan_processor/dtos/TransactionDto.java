@@ -1,12 +1,8 @@
 package com.hygatech.loan_processor.dtos;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.hygatech.loan_processor.entities.Account;
 import com.hygatech.loan_processor.entities.TransactionType;
 import com.hygatech.loan_processor.entities.User;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -14,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -28,7 +25,10 @@ public class TransactionDto {
     private String trxNo;
     private LocalDateTime trxDate;
     @NotNull
-    private Double amount;
+    private BigDecimal amount;
+
+    private Long noOfDays;
+    private BigDecimal commissionAmount;
 
     private TransactionType trxType;
     @NotNull

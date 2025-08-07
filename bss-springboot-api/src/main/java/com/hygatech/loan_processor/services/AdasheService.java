@@ -1,16 +1,21 @@
 package com.hygatech.loan_processor.services;
 
+import com.hygatech.loan_processor.dtos.AdasheCommissionResponse;
 import com.hygatech.loan_processor.dtos.MonthlyRepaymentDTO;
 import com.hygatech.loan_processor.dtos.ServerResponse;
+import com.hygatech.loan_processor.entities.AdasheCommission;
 import com.hygatech.loan_processor.entities.AdasheSetup;
 import com.hygatech.loan_processor.exceptions.ObjectNotFoundException;
 import com.hygatech.loan_processor.repositories.AdasheCommissionRepository;
 import com.hygatech.loan_processor.repositories.AdasheSetupRepository;
+import com.hygatech.loan_processor.specifications.AdasheCommissionSpecifications;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -53,5 +58,18 @@ public class AdasheService {
                 .build();
 
 
+    }
+
+    public List<AdasheCommissionResponse> getCommissionsWithSpec(LocalDateTime startDate, LocalDateTime endDate) {
+        Specification<AdasheCommission> spec = AdasheCommissionSpecifications.trxDateBetween(startDate, endDate);
+        return commissionRepository.findAll(spec)
+                .stream()
+                .map(adasheCommission -> new AdasheCommissionResponse(
+                        adasheCommission.getId(),
+                        adasheCommission.getAmount(),
+                        adasheCommission.getAccount(),
+                        adasheCommission.getTrxId(),
+                        adasheCommission.getTrxDate()))
+                .toList();
     }
 }

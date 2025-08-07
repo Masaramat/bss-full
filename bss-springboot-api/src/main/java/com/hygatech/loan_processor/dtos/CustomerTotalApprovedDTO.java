@@ -6,11 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
+
 @Data
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
 public class CustomerTotalApprovedDTO {
     private Customer customer;
-    private Double totalApproved;
+    private BigDecimal totalApproved;
 }

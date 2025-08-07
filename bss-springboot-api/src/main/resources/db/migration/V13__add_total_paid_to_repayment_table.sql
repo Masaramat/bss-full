@@ -1,0 +1,5 @@
+ALTER TABLE loan_repayments
+    ADD COLUMN total_paid DOUBLE NOT NULL DEFAULT 0,
+    ADD COLUMN total_due DOUBLE NOT NULL DEFAULT 0,
+    ADD COLUMN total_interest_paid DOUBLE NOT NULL DEFAULT 0;
+

@@ -10,9 +10,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.stream.Stream;
 
 @RestController
@@ -83,6 +87,23 @@ public class ReportController {
         Stream<MonthlyRepaymentDTO> requests = adasheService.getMonthlyYearAdasheCommission();
         return ResponseEntity.ok(requests);
     }
+
+    @GetMapping("adashe/commission")
+    @Operation(summary = "Get Adashe commission")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Succeeded")
+    })
+    public ResponseEntity<List<AdasheCommissionResponse>> getAdasheCommission(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate
+    ) {
+        List<AdasheCommissionResponse> commissions = adasheService.getCommissionsWithSpec(
+                startDate != null ? startDate.toLocalDateTime() : null,
+                endDate != null ? endDate.toLocalDateTime() : null
+        );
+        return ResponseEntity.ok(commissions);
+    }
+
 
 
 

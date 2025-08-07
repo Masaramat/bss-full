@@ -11,6 +11,7 @@ import com.sun.source.doctree.SeeTree;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -26,7 +27,7 @@ public class AccountService {
             account.setName(requestDto.getName());
             account.setAccountType(requestDto.getAccountType());
             account.setAccountStatus(requestDto.getAccountStatus());
-            account.setBalance(0.00);
+            account.setBalance(BigDecimal.ZERO);
 
             return AccountUtil.toDto(repository.save(account));
 

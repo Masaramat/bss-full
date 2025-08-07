@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -20,7 +21,7 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private Double amount;
+    private BigDecimal amount;
 
     @ManyToOne()
     @JoinColumn(name = "account_id")
@@ -33,8 +34,4 @@ public class Transaction {
     @ManyToOne
     private User user;
 
-    @PrePersist
-    protected void onCreate() {
-        this.trxDate = LocalDateTime.now();
-    }
 }

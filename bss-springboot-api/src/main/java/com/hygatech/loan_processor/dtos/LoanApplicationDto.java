@@ -7,14 +7,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
 @Data
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoanApplicationDto {
     private Long id;
-    private Double amount;
+    private BigDecimal amount;
     private String amountInWords;
     private LoanStatus status;
     private LocalDateTime appliedAt;
@@ -24,11 +27,11 @@ public class LoanApplicationDto {
     private Integer tenor;
     private Long daysOverdue;
 
-    private Double collateralDeposit;
-    private Double searchFee;
-    private Double formsFee;
+    private BigDecimal collateralDeposit;
+    private BigDecimal searchFee;
+    private BigDecimal formsFee;
 
-    private Double amountApproved;
+    private BigDecimal amountApproved;
     private String amountInWordsApproved;
     private Integer tenorApproved;
 
@@ -39,4 +42,6 @@ public class LoanApplicationDto {
     private Customer customer;
     private LoanProduct loanProduct;
     private Group group;
+
+    private List<RejectionResponse> rejections;
 }

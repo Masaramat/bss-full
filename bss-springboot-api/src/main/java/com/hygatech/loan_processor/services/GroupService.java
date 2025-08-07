@@ -5,7 +5,6 @@ import com.hygatech.loan_processor.entities.Group;
 import com.hygatech.loan_processor.repositories.GroupRepository;
 import com.hygatech.loan_processor.utils.GroupUtil;
 import jakarta.transaction.Transactional;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

@@ -10,4 +10,5 @@ export type UserProfile = {
     email: string;
     role: string;
     name: string;
+    isEnabled?: boolean;
 }

@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -36,7 +37,7 @@ public class CustomerService {
 
             account.setCustomer(customer);
             account.setAccountStatus(AccountStatus.ACTIVE);
-            account.setBalance(0.00);
+            account.setBalance(BigDecimal.ZERO);
             accountRepository.save(account);
 
             return CustomerUtil.toDto(repository.save(customer));

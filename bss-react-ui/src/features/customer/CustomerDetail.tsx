@@ -12,14 +12,15 @@ import {useForm} from 'react-hook-form';
 import {getCustomerAccounts, makeTransaction} from './api';
 import {toast} from 'react-toastify';
 import {useAuth} from '../../Context/useAuth';
-import {sendSms} from '../homeApi';
 import {Avatar, CircularProgress} from '@mui/material';
 import {deepPurple} from '@mui/material/colors';
 
 type TransactionFormInputs = {
   amount: number;
   accountId: number;
+  noOfDays?: number;
   description: string;
+  commissionAmount?: number;
 };
 
 const validation = Yup.object().shape({
@@ -27,6 +28,8 @@ const validation = Yup.object().shape({
       .required("Amount is required")
       .min(1, "Amount must be greater than 0"),
   accountId: Yup.number().required("Account is required"),
+  noOfDays: Yup.mixed(),
+  commissionAmount: Yup.mixed(),
   description: Yup.string()
       .required("Description is required")
       .max(100, "Description too long"),
@@ -43,7 +46,9 @@ const CustomerDetail = () => {
   const navigate = useNavigate();
   const {user} = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<TransactionFormInputs>({
+  const [showNumberOfDays, setShowNumberOfDays] = useState<boolean>(false);
+  const [showCommissionField, setShowCommissionField] = useState<boolean>(false);
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<TransactionFormInputs>({
     resolver: yupResolver(validation)
   });
 
@@ -68,6 +73,28 @@ const CustomerDetail = () => {
     fetchData();
   }, [customerId, navigate]);
 
+  const accountId = watch("accountId");
+
+  useEffect(() => {
+
+    const selectedAccount = accounts.find((account) => account.id === Number(accountId));
+
+    console.log(accountId);
+    console.log(selectedAccount);
+    console.log(trxType);
+    // Reset both flags first
+    setShowCommissionField(false);
+    setShowNumberOfDays(false);
+
+    if (selectedAccount?.accountType === "ADASHE") {
+      if (trxType === "debit") {
+        setShowCommissionField(true);
+      } else if (trxType === "credit") {
+        setShowNumberOfDays(true);
+      }
+    }
+  }, [accountId, accounts, trxType]);
+
   useEffect(() => {
     if (accounts.length > 0) {
       $(function ($) {
@@ -90,6 +117,15 @@ const CustomerDetail = () => {
   const handleTransaction = async (form: TransactionFormInputs) => {
     if (!trxType || !user) return;
     setTransactionProcessing(true)
+    const account = accounts.find(account => account.id === form.accountId)
+
+    if(account?.accountType === "LOAN"){
+      setTransactionProcessing(false)
+      toast.error("You cannot deposit to a loan account");
+      reset();
+      setIsModalOpen(false);
+      return;
+    }
 
     try {
       const res = await makeTransaction(
@@ -98,6 +134,8 @@ const CustomerDetail = () => {
           trxType,
           form.description,
           user.id,
+          Number(form.noOfDays),
+          Number(form.commissionAmount),
           navigate
       );
 
@@ -117,9 +155,10 @@ const CustomerDetail = () => {
           });
 
           const newBalance = account.balance + (trxType === 'credit' ? form.amount : -form.amount);
-          const message = `Credit: \nYour account: ${maskedAccountNo} has been ${trxType === 'credit' ? 'credited' : 'debited'} with ${formatCurrency(form.amount)} \nTrx Type: ${trxType === 'credit' ? 'CASH DEPOSIT' : 'WITHDRAWAL'} \nBalance: ${formatCurrency(newBalance)} \nDT: ${formattedDate}`;
+          const message = `${trxType === 'credit' ? 'Credit:' : 'Debit'} \nYour account: ${maskedAccountNo} has been ${trxType === 'credit' ? 'credited' : 'debited'} with ${formatCurrency(form.amount)} \nTrx Type: ${trxType === 'credit' ? 'CASH DEPOSIT' : 'WITHDRAWAL'} \nBalance: ${formatCurrency(newBalance)} \nDT: ${formattedDate}`;
 
-          await sendSms(message, customer.phoneNumber);
+          console.log(message);
+          // await sendSms(message, customer.phoneNumber);
         }
 
         toast.success(trxType === 'credit' ? "Deposit successful" : "Withdrawal successful");
@@ -159,6 +198,11 @@ const CustomerDetail = () => {
     // Fallback to first initial only
     return nameParts[0].charAt(0).toUpperCase();
   };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    reset();
+  }
 
   if (isLoading) {
     return (
@@ -323,7 +367,7 @@ const CustomerDetail = () => {
             {/* Transaction Modal */}
             <Modal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => closeModal()}
                 onConfirm={handleSubmit(handleTransaction)}
                 title={trxType === 'credit' ? "Savings Deposit" : "Savings Withdrawal"}
                 confirmText={trxType === 'credit' ? "Deposit" : "Withdraw"}
@@ -370,6 +414,42 @@ const CustomerDetail = () => {
                   )}
                 </div>
 
+                {showNumberOfDays && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="amount">
+                        Number of Days
+                      </label>
+                      <input
+                          className={`w-full px-3 py-2 border rounded-md ${
+                              errors.noOfDays ? 'border-red-500' : 'border-gray-300'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          type="number"
+                          {...register("noOfDays")}
+                      />
+                      {errors.noOfDays && (
+                          <p className="mt-1 text-sm text-red-600">{errors.noOfDays.message}</p>
+                      )}
+                    </div>
+                )}
+
+                {showCommissionField && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="amount">
+                        Commission Amount
+                      </label>
+                      <input
+                          className={`w-full px-3 py-2 border rounded-md ${
+                              errors.commissionAmount ? 'border-red-500' : 'border-gray-300'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          type="number"
+                          {...register("commissionAmount")}
+                      />
+                      {errors.commissionAmount && (
+                          <p className="mt-1 text-sm text-red-600">{errors.commissionAmount.message}</p>
+                      )}
+                    </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="description">
                     Narration
@@ -388,9 +468,9 @@ const CustomerDetail = () => {
                 </div>
               </div>
             </Modal>
-          </div>
+        </div>
       </div>
-          );
-          };
+  );
+};
 
-          export default CustomerDetail;
+export default CustomerDetail;

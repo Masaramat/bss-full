@@ -69,10 +69,10 @@ export default function CardPageVisits() {
                     {formatCurrency(loan.amount)}
                   </td>
                   <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                    <span className={getStatusClass(loan.status)}>{capitalizeFirstLetter(loan.status === 'PAID_OFF' ? 'paid off' : loan.status)}</span>
+                    <span className={getStatusClass(String(loan.status))}>{capitalizeFirstLetter(String(loan.status === 'PAID_OFF' ? 'paid off' : loan.status))}</span>
                   </td>
                   <td className="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-                    {formatDate(loan.appliedAt)}
+                    {formatDate(String(loan.appliedAt))}
                   </td>
                 </tr>
               ))}

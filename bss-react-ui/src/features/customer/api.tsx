@@ -4,14 +4,16 @@ import { handleError } from "../../Helpers/ErrorHandler";
 import { Customer } from "./types";
 import { NavigateFunction } from "react-router-dom";
 
-export const makeTransaction = (amount: number, accountId: number, trxType: string, description: string, userId: number, navigate: NavigateFunction ) => {
+export const makeTransaction = (amount: number, accountId: number, trxType: string, description: string, userId: number, noOfDays: number, commissionAmount: number, navigate: NavigateFunction) => {
     try{
        const data =  axios.post(`${APP_URL}/transaction`, {
             amount: amount,
             accountId: accountId,
             trxType: trxType,
             description: description,
-            userId: userId
+            userId: userId,
+            noOfDays: noOfDays,
+           commissionAmount: commissionAmount,
         })
 
         return data;

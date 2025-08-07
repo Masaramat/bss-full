@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,7 +20,7 @@ public class AccountDto {
     private String name;
     private String accountNumber;
     private AccountType accountType;
-    private Double balance;
+    private BigDecimal balance;
     private AccountStatus accountStatus;
     private Integer loanCycle;
     private Customer customer;

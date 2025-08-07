@@ -18,4 +18,4 @@ ENV JAVA_OPTS="-Xms512m -Xmx1024m"
 LABEL org.opencontainers.image.source="https://github.com/Masaramat/bss-springboot-api.git"
 
 # Run the app with JAVA_OPTS and profile
-ENTRYPOINT exec java $JAVA_OPTS -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar /app/loan-processor.jar
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar /app/loan-processor.jar"]

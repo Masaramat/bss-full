@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
+
 @Data
 @Entity@ToString
 @AllArgsConstructor
@@ -18,7 +20,7 @@ public class AdasheSetup {
     private Long id;
 
     @NotNull
-    private Double commissionRate;
+    private BigDecimal commissionRate;
     @NotNull
-    private Double minimumDeposit;
+    private BigDecimal minimumDeposit;
 }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -13,14 +14,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoanApplicationRequestDto {
-    private Double amount;
+    private BigDecimal amount;
     private String amountInWords;
     private LoanStatus status;
     private LocalDateTime applicationDate;
     private Integer tenor;
-    private Double collateralDeposit;
-    private Double searchFee;
-    private Double formsFee;
+    private BigDecimal collateralDeposit;
+    private BigDecimal searchFee;
+    private BigDecimal formsFee;
     private Long appliedById;
     private Long customerId;
     private Long loanProductId;

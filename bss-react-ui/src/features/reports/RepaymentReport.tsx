@@ -70,12 +70,12 @@ const RepaymentReport = () => {
     useEffect(() => {
         setDateType('');
         setStatus('');
-        let curDate = new Date();
+        const curDate = new Date();
         const oneMonthBack = subMonths(curDate, 1);
         setFromDate(oneMonthBack);
         setToDate(curDate);
-        let fromDate = formatLocalDateTime(oneMonthBack, 'start');
-        let toDate = formatLocalDateTime(curDate, 'end');
+        const fromDate = formatLocalDateTime(oneMonthBack, 'start');
+        const toDate = formatLocalDateTime(curDate, 'end');
 
         const newRequestReport = {
             fromDate: fromDate,
@@ -217,6 +217,8 @@ const RepaymentReport = () => {
                                 <th>Interest</th>
                                 <th>Total</th>
                                 <th>Days Overdue</th>
+                                <th>Maturity</th>
+                                <th>Payment Date</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -225,10 +227,12 @@ const RepaymentReport = () => {
                                 <tr key={index}>
                                     <td>{index + 1}</td>
                                     <td>{formatCurrency(repayment.total - (repayment.interest + repayment.monitoringFee + repayment.processingFee))}</td>
-                                    <td>{repayment.application.customer.name}</td>
+                                    <td>{repayment?.application?.customer?.name}</td>
                                     <td>{formatCurrency(repayment.interest + repayment.monitoringFee + repayment.processingFee)}</td>
                                     <td>{formatCurrency(repayment.total)}</td>
                                     <td>{capitalizeFirstLetter(repayment.daysOverdue ? String(repayment.daysOverdue) + " days" : "Performing")}</td>
+                                    <td>{repayment.maturityDate && formatDate(String(repayment.maturityDate))}</td>
+                                    <td>{repayment.paymentDate && formatDate(String(repayment.paymentDate)) || "Pending"}</td>
                                     <td>{capitalizeFirstLetter(repayment.status)}</td>
                                 </tr>
                             ))}

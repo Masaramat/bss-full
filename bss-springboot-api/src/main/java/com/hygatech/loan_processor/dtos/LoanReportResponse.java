@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.swing.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -15,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class LoanReportResponse {
     private Long id;
-    private Double amount;
+    private BigDecimal amount;
     private String amountInWords;
     private LoanStatus status;
     private LocalDateTime appliedAt;
@@ -23,10 +25,10 @@ public class LoanReportResponse {
     private LocalDateTime disbursedAt;
     private LocalDateTime maturity;
     private Integer tenor;
-    private Double collateralDeposit;
-    private Double searchFee;
-    private Double formsFee;
-    private Double amountApproved;
+    private BigDecimal collateralDeposit;
+    private BigDecimal searchFee;
+    private BigDecimal formsFee;
+    private BigDecimal amountApproved;
     private String amountInWordsApproved;
     private Integer tenorApproved;
     private Long daysOverdue;

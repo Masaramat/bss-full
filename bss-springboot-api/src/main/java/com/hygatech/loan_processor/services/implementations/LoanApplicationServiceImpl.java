@@ -1,28 +1,32 @@
-package com.hygatech.loan_processor.services;
+package com.hygatech.loan_processor.services.implementations;
 
 import com.hygatech.loan_processor.dtos.*;
 import com.hygatech.loan_processor.entities.*;
 import com.hygatech.loan_processor.repositories.*;
+import com.hygatech.loan_processor.services.TransactionService;
+import com.hygatech.loan_processor.services.interfaces.LoanApplicationService;
 import com.hygatech.loan_processor.utils.GeneralUtils;
 import com.hygatech.loan_processor.utils.LoanApplicationUtil;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
-@Transactional
 @RequiredArgsConstructor
-public class LoanApplicationService {
+public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final LoanApplicationRepository repository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
@@ -32,10 +36,14 @@ public class LoanApplicationService {
     private final TransactionService transactionService;
     private final GroupRepository groupRepository;
 
+    @Transactional
+    @Override
     public LoanApplicationDto create(LoanApplicationRequestDto requestDto) {
         String transactionNumber = GeneralUtils.generateTransactionNumber();
         try {
+
             LoanApplication application = LoanApplicationUtil.getLoanApplication(requestDto);
+
             LoanProduct product = getProduct(requestDto.getLoanProductId());
             User user = getUser(requestDto.getAppliedById());
             Customer customer = getCustomer(requestDto.getCustomerId());
@@ -58,8 +66,8 @@ public class LoanApplicationService {
             application.setStatus(LoanStatus.PENDING);
 
             //TODO: Add logic to get collateral deposit from CD Account
-            double expectedCollateralDeposit = 0.1 * requestDto.getAmount();
-            double actualCd;
+            BigDecimal expectedCollateralDeposit = BigDecimal.valueOf(0.1).multiply(requestDto.getAmount());
+            BigDecimal actualCd;
 
             Account collateralDepositAccount = getCollateralDepostAccount(customer);
 
@@ -73,16 +81,17 @@ public class LoanApplicationService {
                 actualCd = requestDto.getCollateralDeposit();
 
             }else {
-                collateralDepositAccount.setBalance(collateralDepositAccount.getBalance() + requestDto.getCollateralDeposit());
-                actualCd = collateralDepositAccount.getBalance() + requestDto.getCollateralDeposit();
+                collateralDepositAccount.setBalance(collateralDepositAccount.getBalance().add(requestDto.getCollateralDeposit()));
+                actualCd = collateralDepositAccount.getBalance().add(requestDto.getCollateralDeposit());
             }
 
-            if (actualCd < expectedCollateralDeposit){
+            if (actualCd.compareTo(expectedCollateralDeposit) < 0) {
+                log.error("Collateral deposit not enough: expected {}, actual {}", expectedCollateralDeposit, actualCd);
                 throw new RuntimeException("Collateral deposit not enough");
             }
 
             Account savedCdAccount = accountRepository.save(collateralDepositAccount);
-            if(requestDto.getCollateralDeposit() > 0){
+            if(requestDto.getCollateralDeposit().compareTo(BigDecimal.ZERO) > 0){
                 transactionService.createTransaction(savedCdAccount, "Collateral deposit", requestDto.getCollateralDeposit(), transactionNumber);
             }
 
@@ -94,9 +103,13 @@ public class LoanApplicationService {
         }
     }
 
+    @Override
+    @Transactional
     public LoanApplicationDto approveLoanApplication(LoanApprovalDto approvalDto){
         try{
+            log.info("Approval Object: {}", approvalDto);
             LoanApplication application = getLoan(approvalDto.getLoanId());
+
             User user = getUser(approvalDto.getUserid());
 
             validateExistingLoan(application.getCustomer());
@@ -116,6 +129,8 @@ public class LoanApplicationService {
 
     }
 
+    @Override
+    @Transactional
     public LoanApplicationDto disburseLoan(LoanDisbursementDto disbursementDto) {
         String transactionNumber = GeneralUtils.generateTransactionNumber();
 
@@ -124,7 +139,7 @@ public class LoanApplicationService {
         validateExistingLoan(loanApplication.getCustomer());
 
 
-        double loanRepayment = calculateLoanRepayment(loanApplication);
+        BigDecimal loanRepayment = calculateLoanRepayment(loanApplication);
         int numOfRepayments = loanApplication.getTenorApproved() * 4;
         LocalDateTime maturity = calculateMaturity(numOfRepayments);
 
@@ -148,10 +163,14 @@ public class LoanApplicationService {
 
 
 
+    @Override
+    @Transactional(readOnly = true)
     public Stream<LoanApplicationDto> all(){
         return repository.findAll().stream().map(LoanApplicationUtil::toDto);
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public Stream<LoanRepayment> getExpectedRepayments(){
         List<LoanRepayment> repayments = getDueLoanRepayments();
         return repayments.stream();
@@ -159,81 +178,64 @@ public class LoanApplicationService {
 
 
 
+    @Override
+    @Transactional
     public Stream<LoanRepayment> repayLoan() {
         List<LoanRepayment> repayments = getDueLoanRepayments();
-
         List<LoanRepayment> updatedRepayments = new ArrayList<>();
+        String transactionNumber = GeneralUtils.generateTransactionNumber();
 
         for (LoanRepayment loanRepayment : repayments) {
-            String transactionNumber = GeneralUtils.generateTransactionNumber();
+
             LoanApplication application = loanRepayment.getApplication();
-            Optional<Account> savingsAccountOptional = accountRepository.findAccountByAccountTypeAndCustomer(AccountType.SAVINGS, application.getCustomer());
-            if (savingsAccountOptional.isEmpty()) {
-                throw new RuntimeException("Account not found");
-            }
-            Account savingsAccount = savingsAccountOptional.get();
+            Account savingsAccount = accountRepository.findAccountByAccountTypeAndCustomer(AccountType.SAVINGS, application.getCustomer())
+                    .orElseThrow(() -> new RuntimeException("Savings account not found"));
+            Account loanAccount = accountRepository.findAccountByLoanId(application.getId())
+                    .orElseThrow(() -> new RuntimeException("Loan account not found"));
 
-            Optional<Account> loanAccountOptional = accountRepository.findAccountByLoanId(application.getId());
-            if (loanAccountOptional.isEmpty()) {
-                throw new RuntimeException("Loan Account not found");
-            }
-            Account loanAccount = loanAccountOptional.get();
+            // Calculate available payment amount (can't exceed totalDue)
+            BigDecimal paymentAmount = savingsAccount.getBalance().min(loanRepayment.getTotalDue());
 
-            if (loanRepayment.getTotal() > savingsAccount.getBalance()) {
-                Duration duration = Duration.between(loanRepayment.getMaturityDate(), LocalDateTime.now());
-                if (savingsAccount.getBalance() > 0) {
-                    loanAccount.setBalance(loanAccount.getBalance() - savingsAccount.getBalance());
-                    loanRepayment.setTotal(loanRepayment.getTotal() - savingsAccount.getBalance());
-                    transactionService.createTransaction(savingsAccount, "Loan repayment", -savingsAccount.getBalance(), transactionNumber);
-                    transactionService.createTransaction(loanAccount, "Loan repayment", -savingsAccount.getBalance(), transactionNumber);
-                    savingsAccount.setBalance(0.00);
-
-                }
-                loanRepayment.setStatus(RepaymentStatus.DEFAULT);
-                loanRepayment.setDaysOverdue(duration.toDays());
-                if(application.getMaturity().isBefore(LocalDateTime.now())){
-                    Duration duration1 = Duration.between(application.getMaturity(), LocalDateTime.now());
-                    application.setStatus(LoanStatus.DUE);
-                    application.setDaysOverdue(duration1.toDays());
-                }
-            } else {
-                loanAccount.setBalance(loanAccount.getBalance() - loanRepayment.getTotal());
-                loanRepayment.setStatus(RepaymentStatus.PAID);
-                loanRepayment.setPaymentDate(LocalDateTime.now());
-                savingsAccount.setBalance(savingsAccount.getBalance() - loanRepayment.getTotal());
-                transactionService.createTransaction(savingsAccount, "Loan repayment", -loanRepayment.getTotal(), transactionNumber);
-                transactionService.createTransaction(loanAccount, "Loan repayment", -loanRepayment.getTotal(), transactionNumber);
-
-                if (loanAccount.getBalance() <= 1) {
-                    loanAccount.setBalance(0.00);
-                    loanAccount.setAccountStatus(AccountStatus.CLOSED);
-                    application.setStatus(LoanStatus.PAID_OFF);
-                }
+            if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                handleDefaultCase(loanRepayment, application);
+                updatedRepayments.add(loanRepayment);
+                continue;
             }
 
-            repository.save(application);
-            accountRepository.save(loanAccount);
-            accountRepository.save(savingsAccount);
+            // Process payment
+            processPayment(loanRepayment, application, savingsAccount, loanAccount, paymentAmount, transactionNumber);
+
             updatedRepayments.add(loanRepayment);
         }
 
-        List<LoanRepayment> finalRepayments = repaymentRepository.saveAll(updatedRepayments);
-        return finalRepayments.stream();
+        return repaymentRepository.saveAll(updatedRepayments).stream();
     }
 
+
+
+
+
+    @Override
+    @Transactional(readOnly = true)
     public Stream<LoanApplicationDto> getPendingLoans(){
         List<LoanStatus> statuses = Arrays.asList(LoanStatus.PENDING, LoanStatus.APPROVED);
         return repository.findLoanApplicationsByStatusIn(statuses).stream().map(LoanApplicationUtil::toDto);
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public Stream<LoanRepayment> getRepaymentByLoan(Long loanId){
         return repaymentRepository.findLoanRepaymentsByApplicationId(loanId).stream();
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public LoanApplicationDto find(Long id){
         return LoanApplicationUtil.toDto(getLoan(id));
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public Stream<CustomerLoanCountDTO> getTopCustomersWithHighestLoans(Integer number) {
         List<Object[]> result = repository.findTopCustomersWithHighestLoans(PageRequest.of(0, number));
         Long totalCount = repository.countAllByStatusIn(List.of(LoanStatus.ACTIVE, LoanStatus.PAID_OFF));
@@ -248,13 +250,18 @@ public class LoanApplicationService {
                 .toList().stream();
     }
 
+    @Override
+    @Transactional(readOnly = true)
     public Stream<CustomerTotalApprovedDTO> getTopCustomersByTotalApproved(Integer number) {
         List<Object[]> result = repository.findTopCustomersByTotalApproved(PageRequest.of(0, number));
         return result.stream()
-                .map(row -> new CustomerTotalApprovedDTO((Customer) row[0], (Double) row[1]))
+                .map(row -> new CustomerTotalApprovedDTO((Customer) row[0], BigDecimal.valueOf((Double) row[1])))
                 .toList().stream();
     }
 
+
+    @Override
+    @Transactional(readOnly = true)
     public Stream<LoanApplication> getMostRecentApplications(Integer number) {
         return repository.findMostRecentApplications(PageRequest.of(0, number)).stream();
     }
@@ -305,13 +312,29 @@ public class LoanApplicationService {
             throw new RuntimeException("Customer already has a running loan");
         }
     }
-    private double calculateLoanRepayment(LoanApplication loanApplication) {
-        double interest = (loanApplication.getLoanProduct().getInterestRate() / 100) * loanApplication.getAmountApproved() * loanApplication.getTenorApproved();
-        double monitoringFee = (loanApplication.getLoanProduct().getMonitoringFeeRate() / 100) * loanApplication.getAmountApproved() * loanApplication.getTenorApproved();
-        double processingFee = (loanApplication.getLoanProduct().getProcessingFeeRate() / 100) * loanApplication.getAmountApproved() * loanApplication.getTenorApproved();
+    private BigDecimal calculateLoanRepayment(LoanApplication loanApplication) {
+        BigDecimal amount = loanApplication.getAmountApproved();
+        BigDecimal tenor = BigDecimal.valueOf(loanApplication.getTenorApproved());
 
-        return interest + monitoringFee + processingFee + loanApplication.getAmountApproved();
+        BigDecimal interest = BigDecimal.valueOf(loanApplication.getLoanProduct().getInterestRate())
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP) // <- added scale + rounding
+                .multiply(amount)
+                .multiply(tenor);
+
+        BigDecimal monitoringFee = BigDecimal.valueOf(loanApplication.getLoanProduct().getMonitoringFeeRate())
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+                .multiply(amount)
+                .multiply(tenor);
+
+        BigDecimal processingFee = BigDecimal.valueOf(loanApplication.getLoanProduct().getProcessingFeeRate())
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+                .multiply(amount)
+                .multiply(tenor);
+
+
+        return interest.add(monitoringFee).add(processingFee).add(amount);
     }
+
     private LocalDateTime calculateMaturity(int numOfRepayments) {
         return LocalDateTime.now().plusWeeks(numOfRepayments);
     }
@@ -322,16 +345,16 @@ public class LoanApplicationService {
         }
         return savingsAccountOptional.get();
     }
-    private void disburseLoanToAccount(Account account, double amountApproved, String trxNo) {
+    private void disburseLoanToAccount(Account account, BigDecimal amountApproved, String trxNo) {
         transactionService.createTransaction(account, "Loan disbursement", amountApproved, trxNo);
-        account.setBalance(account.getBalance() + amountApproved);
+        account.setBalance(account.getBalance().add(amountApproved));
         accountRepository.save(account);
     }
     private int getNextLoanCycle(Customer customer) {
         List<Account> accountList = accountRepository.findAccountsByCustomerAndAccountType(customer, AccountType.LOAN);
         return accountList.size() + 1;
     }
-    private void createLoanAccount(LoanApplication loanApplication, double loanRepayment, int loanCycle, String trxNo) {
+    private void createLoanAccount(LoanApplication loanApplication, BigDecimal loanRepayment, int loanCycle, String trxNo) {
         Account account = new Account();
         account.setCustomer(loanApplication.getCustomer());
         account.setName(loanApplication.getLoanProduct().getName());
@@ -346,21 +369,38 @@ public class LoanApplicationService {
     }
 
     private List<LoanRepayment> createRepayments(LoanApplication loanApplication, int numOfRepayments) {
-        double interest = (loanApplication.getLoanProduct().getInterestRate() / 100) * loanApplication.getAmountApproved() * loanApplication.getTenorApproved();
-        double monitoringFee = (loanApplication.getLoanProduct().getMonitoringFeeRate() / 100) * loanApplication.getAmountApproved() * loanApplication.getTenorApproved();
-        double processingFee = (loanApplication.getLoanProduct().getProcessingFeeRate() / 100) * loanApplication.getAmountApproved() * loanApplication.getTenorApproved();
+        BigDecimal amount = loanApplication.getAmountApproved();
+        BigDecimal tenor = BigDecimal.valueOf(loanApplication.getTenorApproved());
+        BigDecimal n = BigDecimal.valueOf(numOfRepayments);
 
-        double repaymentInterest = interest  / numOfRepayments;
-        double repaymentMonitoringFee = monitoringFee  / numOfRepayments;
-        double repaymentProcessingFee = processingFee  / numOfRepayments;
-        double principal = loanApplication.getAmountApproved() / numOfRepayments;
-        double repaymentTotal = repaymentInterest + repaymentMonitoringFee + repaymentProcessingFee + principal;
+        BigDecimal interest = BigDecimal.valueOf(loanApplication.getLoanProduct().getInterestRate())
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP) // <- added scale + rounding
+                .multiply(amount)
+                .multiply(tenor);
+
+        BigDecimal monitoringFee = BigDecimal.valueOf(loanApplication.getLoanProduct().getMonitoringFeeRate())
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+                .multiply(amount)
+                .multiply(tenor);
+
+        BigDecimal processingFee = BigDecimal.valueOf(loanApplication.getLoanProduct().getProcessingFeeRate())
+                .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)
+                .multiply(amount)
+                .multiply(tenor);
+
+
+        BigDecimal repaymentInterest = interest.divide(n, 2, RoundingMode.HALF_UP);
+        BigDecimal repaymentMonitoringFee = monitoringFee.divide(n, 2, RoundingMode.HALF_UP);
+        BigDecimal repaymentProcessingFee = processingFee.divide(n, 2, RoundingMode.HALF_UP);
+        BigDecimal principal = amount.divide(n, 2, RoundingMode.HALF_UP);
+        BigDecimal repaymentTotal = repaymentInterest.add(repaymentMonitoringFee)
+                .add(repaymentProcessingFee).add(principal);
 
         List<LoanRepayment> repayments = new ArrayList<>();
         LocalDateTime startDate = LocalDateTime.now();
 
         for (int i = 0; i < numOfRepayments; i++) {
-            startDate = startDate.plusWeeks(1);
+            startDate = startDate.plusDays(7);
             LoanRepayment repayment = new LoanRepayment();
             repayment.setApplication(loanApplication);
             repayment.setInterest(repaymentInterest);
@@ -369,12 +409,14 @@ public class LoanApplicationService {
             repayment.setProcessingFee(repaymentProcessingFee);
             repayment.setPrincipal(principal);
             repayment.setTotal(repaymentTotal);
+            repayment.setTotalDue(repaymentTotal);
             repayment.setMaturityDate(startDate);
             repayments.add(repayment);
         }
 
         return repayments;
     }
+
     private void updateLoanApplicationStatus(LoanApplication loanApplication, User user, LocalDateTime maturity) {
         loanApplication.setStatus(LoanStatus.ACTIVE);
         loanApplication.setMaturity(maturity);
@@ -395,10 +437,110 @@ public class LoanApplicationService {
     private Group getGroup(Long groupId){
         Optional<Group> group = groupRepository.findById(groupId);
         if (group.isEmpty()){
-            throw new RuntimeException("Group nt found");
+            throw new RuntimeException("Group not found");
         }
 
         return group.get();
+    }
+
+    private void processPayment(LoanRepayment repayment, LoanApplication application,
+                                Account savingsAccount, Account loanAccount,
+                                BigDecimal paymentAmount, String transactionNumber) {
+        // Safely initialize all BigDecimal values
+        BigDecimal totalPaid = repayment.getTotalPaid() != null ?
+                repayment.getTotalPaid() : BigDecimal.ZERO;
+
+        BigDecimal total = repayment.getTotal() != null ?
+                repayment.getTotal() : BigDecimal.ZERO;
+
+        // Calculate interest and principal portions
+        BigDecimal interestPortion = calculateInterestPortion(repayment, paymentAmount);
+        BigDecimal principalPortion = paymentAmount.subtract(interestPortion);
+
+        // Update repayment tracking
+        repayment.setTotalPaid(totalPaid.add(paymentAmount));
+        repayment.setTotalInterestPaid(
+                (repayment.getTotalInterestPaid() != null ?
+                        repayment.getTotalInterestPaid() : BigDecimal.ZERO)
+                        .add(interestPortion)
+        );
+        repayment.setTotalDue(total.subtract(totalPaid.add(paymentAmount)));
+
+        // Update accounts (with null checks)
+        BigDecimal savingsBalance = savingsAccount.getBalance() != null ?
+                savingsAccount.getBalance() : BigDecimal.ZERO;
+        savingsAccount.setBalance(savingsBalance.subtract(paymentAmount));
+
+        BigDecimal loanBalance = loanAccount.getBalance() != null ?
+                loanAccount.getBalance() : BigDecimal.ZERO;
+        assert loanAccount.getBalance() != null;
+        loanAccount.setBalance(loanAccount.getBalance().subtract(paymentAmount));
+
+        // Record transactions
+        transactionService.createTransaction(
+                savingsAccount,
+                "Loan repayment",
+                paymentAmount.negate(),
+                transactionNumber
+        );
+
+        transactionService.createTransaction(
+                loanAccount,
+                "Loan principal repayment",
+                principalPortion.add(interestPortion).negate(),
+                transactionNumber
+        );
+
+        // Update status if fully paid
+        if (repayment.getTotalDue().compareTo(BigDecimal.ZERO) <= 0) {
+            repayment.setStatus(RepaymentStatus.PAID);
+            repayment.setPaymentDate(LocalDateTime.now());
+        }
+
+        // Check if loan is fully paid
+        if (loanAccount.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            loanAccount.setAccountStatus(AccountStatus.CLOSED);
+            application.setStatus(LoanStatus.PAID_OFF);
+        }
+    }
+
+    private void handleDefaultCase(LoanRepayment repayment, LoanApplication application) {
+        Duration overdueDuration = Duration.between(repayment.getMaturityDate(), LocalDateTime.now());
+        repayment.setStatus(RepaymentStatus.DEFAULT);
+        repayment.setDaysOverdue(overdueDuration.toDays());
+
+        if (application.getMaturity().isBefore(LocalDateTime.now())) {
+            Duration loanOverdueDuration = Duration.between(application.getMaturity(), LocalDateTime.now());
+            application.setStatus(LoanStatus.DUE);
+            application.setDaysOverdue(loanOverdueDuration.toDays());
+        }
+    }
+
+    private BigDecimal calculateInterestPortion(LoanRepayment repayment, BigDecimal paymentAmount) {
+        // Safely initialize all BigDecimal values with defaults if null
+        BigDecimal totalInterestPaid = repayment.getTotalInterestPaid() != null ?
+                repayment.getTotalInterestPaid() : BigDecimal.ZERO;
+
+        BigDecimal interest = repayment.getInterest() != null ?
+                repayment.getInterest() : BigDecimal.ZERO;
+
+        BigDecimal monitoringFee = repayment.getMonitoringFee() != null ?
+                repayment.getMonitoringFee() : BigDecimal.ZERO;
+
+        BigDecimal processingFee = repayment.getProcessingFee() != null ?
+                repayment.getProcessingFee() : BigDecimal.ZERO;
+
+        // Calculate remaining interest obligations first
+        BigDecimal remainingInterest = interest
+                .add(monitoringFee)
+                .add(processingFee)
+                .subtract(totalInterestPaid);
+
+        // Pay interest first (can't be negative)
+
+        return paymentAmount.min(
+                remainingInterest.max(BigDecimal.ZERO)
+        );
     }
 
 }

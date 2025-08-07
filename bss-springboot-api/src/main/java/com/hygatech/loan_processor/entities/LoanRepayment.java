@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -21,14 +22,17 @@ public class LoanRepayment {
     private Long id;
     @ManyToOne
     private LoanApplication application;
-    private Double interest;
-    private Double monitoringFee;
-    private Double processingFee;
-    private Double principal;
+    private BigDecimal interest;
+    private BigDecimal monitoringFee;
+    private BigDecimal processingFee;
+    private BigDecimal principal;
     private RepaymentStatus status;
     private LocalDateTime maturityDate;
     private LocalDateTime paymentDate;
     private Long daysOverdue;
-    private Double total;
+    private BigDecimal total;
+    private BigDecimal totalPaid;
+    private BigDecimal totalDue;
+    private BigDecimal totalInterestPaid;
 
 }

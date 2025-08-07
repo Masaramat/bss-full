@@ -10,7 +10,6 @@ import { CircularProgress } from '@mui/material';
 
 const PendingLoans = () => {
     const [loans, setLoans] = useState<LoanApplication[]>();
-    const [] = useState("");
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     
@@ -18,7 +17,7 @@ const PendingLoans = () => {
       setIsLoading(true);
         const fetchData = async () => {
           try {
-            let response = await axios.get(`${APP_URL}/loan-application/pending`);
+            const response = await axios.get(`${APP_URL}/loan-application/pending`);
             setLoans(response?.data)
             setIsLoading(false);
           } catch (error) {
@@ -104,8 +103,8 @@ const PendingLoans = () => {
                   <tr key={loan.id} className="table-row">
                     <td className='w-2'>{index + 1}</td>
                     <td>{loan.amount}</td>
-                    <td>{loan.customer.name}</td>
-                    <td>{loan.loanProduct.name}</td>
+                    <td>{loan?.customer?.name}</td>
+                    <td>{loan?.loanProduct?.name}</td>
                     <td>{loan.status}</td>
                     <td>{loan.tenor}</td>
                     <td>

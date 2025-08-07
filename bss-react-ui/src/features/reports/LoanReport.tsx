@@ -66,16 +66,21 @@ const LoanReport = () => {
         setLoans(response?.data || []);
     };
 
+    const totalAmountApplied = loans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
+    const totalAmountApproved = loans.reduce((sum, loan) => sum + (loan.amountApproved || 0), 0);
+    const totalFormsFee = loans.reduce((sum, loan) => sum + (loan.formsFee || 0), 0);
+
+
     useEffect(() => {
         setAction('');
         setActionBy('');
         setStatus('');
-        let curDate = new Date();
+        const curDate = new Date();
         const oneMonthBack = subMonths(curDate, 1);
         setFromDate(oneMonthBack);
         setToDate(curDate);
-        let fromDate = formatLocalDateTime(oneMonthBack, 'start');
-        let toDate = formatLocalDateTime(curDate, 'end');
+        const fromDate = formatLocalDateTime(oneMonthBack, 'start');
+        const toDate = formatLocalDateTime(curDate, 'end');
 
         const newRequestReport = {
             fromDate: fromDate,
@@ -97,44 +102,52 @@ const LoanReport = () => {
     }, [loanRequestReport]);
 
     useEffect(() => {
-        if (!$.fn.dataTable.isDataTable('#report')) {
-            $('#report').DataTable({
-                dom: 'Bfritp',
-                buttons: [
-                    {
-                        extend: 'csv',
-                        text: 'Export CSV',
-                        filename: `expenses_report`,
-                        title: `Expenses report from ${fromDate && formatDate(formatDateString(fromDate))} to ${toDate && formatDate(formatDateString(toDate))}`,
-                    },
-                    {
-                        extend: 'print',
-                        text: 'Print',
-                        title: `Expenses report from ${fromDate && formatDate(formatDateString(fromDate))} to ${toDate && formatDate(formatDateString(toDate))}`,
-                    }
-                ],
-                language: {
-                    paginate: {
-                        first: 'First',
-                        previous: 'Previous',
-                        next: 'Next',
-                        last: 'Last'
-                    },
-                    aria: {
-                        paginate: {
-                            first: 'First',
-                            previous: 'Previous',
-                            next: 'Next',
-                            last: 'Last'
-                        }
-                    },
-                    info: 'Showing _START_ to _END_ of _TOTAL_ entries',
-                    lengthMenu: 'Show _MENU_ Entries per page'
-                },
-            });
+        const table = tableRef.current;
+
+        if (!table || !loans.length) return;
+
+        const $table = $(table);
+
+        // Destroy any previous DataTable
+        if ($.fn.dataTable.isDataTable(table)) {
+            $table.DataTable().clear().destroy();
         }
+
+        // Now (re)initialize with fresh data
+        $table.DataTable({
+            dom: 'Bfritp',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: 'Export CSV',
+                    filename: `loans_report`,
+                    title: `Loans report from ${fromDate && formatDate(formatDateString(fromDate))} to ${toDate && formatDate(formatDateString(toDate))}`,
+                },
+                {
+                    extend: 'print',
+                    text: 'Print',
+                    title: `Loans report from ${fromDate && formatDate(formatDateString(fromDate))} to ${toDate && formatDate(formatDateString(toDate))}`,
+                },
+            ],
+            language: {
+                paginate: {
+                    first: 'First',
+                    previous: 'Previous',
+                    next: 'Next',
+                    last: 'Last',
+                },
+                info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                lengthMenu: 'Show _MENU_ Entries per page',
+            },
+        });
+
+        return () => {
+            if ($.fn.dataTable.isDataTable(table)) {
+                $table.DataTable().destroy();
+            }
+        };
     }, [loans, fromDate, toDate]);
-    console.log(loans)
+
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -155,6 +168,7 @@ const LoanReport = () => {
         // Ensure setIsLoading(false) is also called in getLoans after finishing
     };
 
+
     let content = <div></div>;
 
     if (isLoading) {
@@ -170,7 +184,8 @@ const LoanReport = () => {
                     <div className='col-span-1 text-lg mt-1'><h3>Loans Report</h3></div>
                 </div>
                 <div className='p-3'>
-                    <form className="my-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm font-montserrat" onSubmit={handleSubmit}>
+                    <form className="my-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm font-montserrat"
+                          onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="">Status: </label>
                             <select value={status} className="form-control" onChange={handleStatusSelect}>
@@ -195,10 +210,8 @@ const LoanReport = () => {
                             <label htmlFor="">Action By: </label>
                             <select value={actionBy} className="form-control" onChange={handleActionBySelect}>
                                 <option value="">None</option>
-                                {users && users.map((user: UserProfile) => (
-                                    <>
-                                        <option value={user.id}>{user.username}</option>
-                                    </>
+                                {users.map((user: UserProfile) => (
+                                    <option key={user.id} value={user.id}>{user.username}</option>
                                 ))}
                             </select>
                         </div>
@@ -226,27 +239,54 @@ const LoanReport = () => {
                     </form>
                     <table id="report" ref={tableRef}>
                         <thead className="table-header-group">
-                            <tr>
-                                <th className="w-2">SNo</th>
-                                <th>Amount</th>
-                                <th>Customer</th>
-                                <th>Applied By</th>
-                                <th>Status</th>
-                            </tr>
+                        <tr>
+                            <th className="w-2">SNo</th>
+                            <th>Amount Applied</th>
+                            <th>Amount Approved</th>
+                            <th>Customer</th>
+                            <th>Days Overdue</th>
+                            <th>Applied By</th>
+                            <th>Form Fee</th>
+                            <th>Approved By</th>
+                            <th>Disbursed By</th>
+                            <th>Maturity</th>
+                            <th>Status</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            {loans.map((loan: LoanApplication, index: number) =>  (
-                                
-                                <tr key={index}>
-                                    <td>{index + 1}</td>
-                                    <td>{formatCurrency(loan.amount)}</td>
-                                    <td>{loan.customer.name}</td>
-                                    <td>{loan.appliedBy?.username}</td> {/* Corrected the case to match response */}
-                                    <td>{capitalizeFirstLetter(loan.status)}</td>
-                                </tr>
-                            ))}
+                        {loans.map((loan: LoanApplication, index: number) => (
+                            <tr key={index}>
+                                <td>{index + 1}</td>
+                                <td>{formatCurrency(loan.amount)}</td>
+                                <td>{loan.amountApproved ? formatCurrency(loan.amountApproved) : "Pending"}</td>
+                                <td>{loan?.customer?.name}</td>
+                                <td>{loan.daysOverdue || "0"}</td>
+                                <td>{loan.appliedBy?.username}</td>
+                                <td>{formatCurrency(loan.formsFee)}</td>
+                                {/* Format form fee */}
+                                <td>{loan.approvedBy?.username || "Pending"}</td>
+                                <td>{loan.disbursedBy?.username || "Pending"}</td>
+                                <td>{loan.maturity && formatDate(String(loan?.maturity)) || "Pending"}</td>
+                                <td>{capitalizeFirstLetter(String(loan?.status))}</td>
+                            </tr>
+                        ))}
                         </tbody>
+                        <tfoot className="font-bold">
+                        <tr>
+                            <td>Total</td>
+                            <td>{formatCurrency(totalAmountApplied)}</td>
+                            <td>{formatCurrency(totalAmountApproved)}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>{formatCurrency(totalFormsFee)}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        </tfoot>
                     </table>
+
                 </div>
             </div>
         );

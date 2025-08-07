@@ -3,12 +3,13 @@ package com.hygatech.loan_processor.controllers;
 import com.hygatech.loan_processor.dtos.*;
 import com.hygatech.loan_processor.entities.LoanApplication;
 import com.hygatech.loan_processor.entities.LoanRepayment;
-import com.hygatech.loan_processor.services.LoanApplicationService;
+import com.hygatech.loan_processor.services.implementations.LoanApplicationServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +19,10 @@ import java.util.stream.Stream;
 @RestController
 @RequestMapping("/api/v1/loan-application")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Customer Loans APIs", description = "Endpoints for handling group management")
 public class LoanApplicationController {
-    private final LoanApplicationService service;
+    private final LoanApplicationServiceImpl service;
 
     @PostMapping
     @Operation(summary = "Create A Loan application")
@@ -41,6 +43,7 @@ public class LoanApplicationController {
             @ApiResponse(responseCode = "403", description = "Data integrity violation")
     })
     public ResponseEntity<LoanApplicationDto> approveLoanApplication(@RequestBody LoanApprovalDto approvalDto){
+        log.info("Approval Object: {}", approvalDto);
         return ResponseEntity.ok(service.approveLoanApplication(approvalDto));
     }
 

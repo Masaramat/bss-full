@@ -40,3 +40,21 @@ export const getTransactionReport = (transactionReportRequest: TransactionReport
         handleError(error, navigate)
     }
 }
+
+export const getAdasheCommissionReport = async (
+    fromDate: string,
+    toDate: string,
+    navigate: NavigateFunction
+) => {
+    try {
+        const params = {
+            startDate: fromDate,
+            endDate: toDate,
+        };
+
+        const response = await axios.get(`${APP_URL}/report/adashe/commission`, { params });
+        return response;
+    } catch (error) {
+        handleError(error, navigate);
+    }
+};

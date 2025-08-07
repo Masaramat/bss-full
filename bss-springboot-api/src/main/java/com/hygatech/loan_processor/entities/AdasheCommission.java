@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,7 +20,7 @@ public class AdasheCommission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double amount;
+    private BigDecimal amount;
     @OneToOne
     private Account account;
     private String trxId;

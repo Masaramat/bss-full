@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @ToString
@@ -20,7 +22,7 @@ public class LoanApplication {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double amount;
+    private BigDecimal amount;
     private String amountInWords;
     private LoanStatus status;
     private LocalDateTime appliedAt;
@@ -28,10 +30,10 @@ public class LoanApplication {
     private LocalDateTime disbursedAt;
     private LocalDateTime maturity;
     private Integer tenor;
-    private Double collateralDeposit;
-    private Double searchFee;
-    private Double formsFee;
-    private Double amountApproved;
+    private BigDecimal collateralDeposit;
+    private BigDecimal searchFee;
+    private BigDecimal formsFee;
+    private BigDecimal amountApproved;
     private String amountInWordsApproved;
     private Integer tenorApproved;
     private Long daysOverdue;
@@ -57,4 +59,5 @@ public class LoanApplication {
     @JoinColumn(name = "group_id", nullable = true)
     @JsonBackReference
     private Group group;
+
 }

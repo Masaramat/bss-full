@@ -124,7 +124,11 @@
 
   /* Form group styles */
   .form-group {
-    @apply col-span-1 max-sm:col-span-2 p-2;
+    @apply col-span-1 max-sm:col-span-2 p-2 block;
+  }
+
+  .form-control {
+    @apply w-full focus:border-blue-400
   }
 
   .sidebarLinkItem{

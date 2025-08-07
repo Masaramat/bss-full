@@ -20,7 +20,7 @@ const LoansPage = () => {
         const fetchData = async () => {
           setIsLoading(true);
           try {
-            let response = await axios.get(`${APP_URL}/loan-application`);
+            const response = await axios.get(`${APP_URL}/loan-application`);
             setLoans(response?.data)
             setIsLoading(false);
           } catch (error) {
@@ -104,11 +104,11 @@ const LoansPage = () => {
                   {loans && loans?.map((loan: LoanApplication, index: number) => (
                     <tr key={loan.id} className="table-row">
                       <td className='w-2'>{index + 1}</td>
-                      <td>{loan.customer.name}</td>
+                      <td>{String(loan?.customer?.name)}</td>
                       <td>{loan.amount}</td>
-                      <td>{capitalizeFirstLetter(loan.status)}</td>
-                      <td>{formatDate(loan.appliedAt)}</td>
-                      <td>{formatDate(loan.disbursedAt)}</td>                    
+                      <td>{capitalizeFirstLetter(String(loan?.status))}</td>
+                      <td>{formatDate(String(loan?.appliedAt))}</td>
+                      <td>{loan?.disbursedAt ? formatDate(String(loan?.disbursedAt)) : "Pending Approval"}</td>
                       <td>
                         <Link to={`/loan/${loan.id}`} className="text-[12px] bg-primary-blue hover:bg-primary text-white font-bold p-1 px-3 rounded-lg">open</Link>
                         {/* {user.isEnabled ? (

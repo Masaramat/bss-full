@@ -161,7 +161,8 @@ const Sidebar = () => {
                         <li className="listItem"><Link to='/report/loan'>Loans Report</Link></li>
                         <li className="listItem"><Link to='/report/repayment'>Loan Repayment Report</Link></li>
                         <li className="listItem"><Link to='/report/transaction'>Transaction Report</Link></li>
-                      
+                        <li className="listItem"><Link to='/report/adashe/commission'>Adashe Commission Report</Link></li>
+
                       </ul>
                     </div>
                   )}

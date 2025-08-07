@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
+
 @Data
 @ToString
 @AllArgsConstructor
@@ -12,7 +14,7 @@ import lombok.ToString;
 public class LoanApprovalDto {
     private Long loanId;
     private Long userid;
-    private Double amountApproved;
+    private BigDecimal amountApproved;
     private String amountInWordsApproved;
     private Integer tenorApproved;
 }

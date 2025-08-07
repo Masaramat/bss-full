@@ -1,6 +1,6 @@
 CREATE TABLE loan_repayments
 (
-    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     application_id BIGINT,
     interest DOUBLE NOT NULL,
     monitoring_fee DOUBLE NOT NULL,
