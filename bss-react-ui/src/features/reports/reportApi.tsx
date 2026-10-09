@@ -41,6 +41,18 @@ export const getTransactionReport = (transactionReportRequest: TransactionReport
     }
 }
 
+export const getAccountBalanceReport = (request: { accountType: string | null }, navigate: NavigateFunction) => {
+    try{
+        const data = axios.post(
+            `${APP_URL}/report/account/balance`, request
+        )
+        return data;
+
+    }catch(error){
+        handleError(error, navigate)
+    }
+}
+
 export const getAdasheCommissionReport = async (
     fromDate: string,
     toDate: string,

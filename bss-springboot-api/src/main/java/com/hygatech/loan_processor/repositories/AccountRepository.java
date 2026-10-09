@@ -1,10 +1,8 @@
 package com.hygatech.loan_processor.repositories;
 
-import com.hygatech.loan_processor.entities.Account;
-import com.hygatech.loan_processor.entities.AccountStatus;
-import com.hygatech.loan_processor.entities.AccountType;
-import com.hygatech.loan_processor.entities.Customer;
+import com.hygatech.loan_processor.entities.*;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,10 +11,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface AccountRepository extends JpaRepository<Account, Long> {
+public interface AccountRepository extends JpaRepository<Account, Long>, JpaSpecificationExecutor<Account> {
     Optional<Account> findAccountByName(String accountName);
 
-    Optional<Account> findAccountByAccountType(AccountType accountType);
+    List<Account> findAllByAccountType(AccountType accountType);
 
     List<Account> findAccountsByCustomerId(Long customerId);
 

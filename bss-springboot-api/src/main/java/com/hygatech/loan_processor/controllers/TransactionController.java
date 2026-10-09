@@ -1,7 +1,8 @@
 package com.hygatech.loan_processor.controllers;
 
-import com.hygatech.loan_processor.dtos.LoanProductDto;
+import com.hygatech.loan_processor.dtos.AccountStatementRequest;
 import com.hygatech.loan_processor.dtos.TransactionDto;
+import com.hygatech.loan_processor.dtos.TransactionResponse;
 import com.hygatech.loan_processor.entities.Transaction;
 import com.hygatech.loan_processor.services.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,10 +10,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
+import java.util.List;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/transaction")
 @RequiredArgsConstructor
@@ -29,6 +35,21 @@ public class TransactionController {
     })
     public ResponseEntity<Transaction> create(@RequestBody TransactionDto transactionDto){
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(transactionDto));
+    }
+
+    @GetMapping("/statement")
+    public ResponseEntity<List<TransactionResponse>> getAccountStatement(
+            @RequestParam Long accountNumber,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate) {
+
+        AccountStatementRequest request = new AccountStatementRequest(
+                accountNumber,
+                startDate.atStartOfDay(),
+                endDate.atTime(23, 59, 59)
+        );
+
+        return ResponseEntity.ok(service.getAccountStatement(request));
     }
 
     @PostMapping("/send-sms")

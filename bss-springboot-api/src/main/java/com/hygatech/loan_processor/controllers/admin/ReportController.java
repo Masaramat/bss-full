@@ -3,6 +3,7 @@ package com.hygatech.loan_processor.controllers.admin;
 import com.hygatech.loan_processor.dtos.*;
 import com.hygatech.loan_processor.entities.LoanRepayment;
 import com.hygatech.loan_processor.entities.Transaction;
+import com.hygatech.loan_processor.services.AccountBalanceReportService;
 import com.hygatech.loan_processor.services.AdasheService;
 import com.hygatech.loan_processor.services.LoanReportService;
 import com.hygatech.loan_processor.services.TransactionReportService;
@@ -26,6 +27,7 @@ public class ReportController {
     private final LoanReportService loanReportService;
     private final TransactionReportService transactionReportService;
     private final AdasheService adasheService;
+    private final AccountBalanceReportService accountBalanceReportService;
 
 
     @PostMapping("/loans")
@@ -102,6 +104,16 @@ public class ReportController {
                 endDate != null ? endDate.toLocalDateTime() : null
         );
         return ResponseEntity.ok(commissions);
+    }
+
+
+    @PostMapping("/account/balance")
+    @Operation(summary = "Get Monthly Fees")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful retrieval of monthly fees")
+    })
+    public ResponseEntity<List<AccountDto>> getAllAccountBalance(@RequestBody AccountBalanceReportRequest request) {
+        return ResponseEntity.ok(accountBalanceReportService.getAccountBalanceReport(request));
     }
 
 

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,12 +26,14 @@ public class AdasheService {
     private final AdasheCommissionRepository commissionRepository;
     private final AdasheSetupRepository setupRepository;
 
+    @Transactional(readOnly = true)
     public Stream<MonthlyRepaymentDTO> getMonthlyYearAdasheCommission(){
         int currentYear = LocalDateTime.now().getYear();
 
         return commissionRepository.findMonthlyCommissionByYear(currentYear).stream();
     }
 
+    @Transactional(readOnly = true)
     public AdasheSetup findLatest(){
         Optional<AdasheSetup> adasheSetup = setupRepository.findFirstByOrderByIdDesc();
         if (adasheSetup.isEmpty()){
@@ -40,6 +43,7 @@ public class AdasheService {
         return adasheSetup.get();
     }
 
+    @Transactional
     public ServerResponse updateAdasheSetup(AdasheSetup adasheSetup){
         Optional<AdasheSetup> updateAdasheSetupOptional = setupRepository.findById(adasheSetup.getId());
         if (updateAdasheSetupOptional.isEmpty()){
@@ -60,6 +64,7 @@ public class AdasheService {
 
     }
 
+    @Transactional(readOnly = true)
     public List<AdasheCommissionResponse> getCommissionsWithSpec(LocalDateTime startDate, LocalDateTime endDate) {
         Specification<AdasheCommission> spec = AdasheCommissionSpecifications.trxDateBetween(startDate, endDate);
         return commissionRepository.findAll(spec)

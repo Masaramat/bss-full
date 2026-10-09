@@ -22,6 +22,7 @@ public class Transaction {
     private UUID id;
 
     private BigDecimal amount;
+    private BigDecimal balance;
 
     @ManyToOne()
     @JoinColumn(name = "account_id")

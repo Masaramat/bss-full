@@ -5,22 +5,22 @@ import com.hygatech.loan_processor.dtos.CustomerRequestDto;
 import com.hygatech.loan_processor.entities.*;
 import com.hygatech.loan_processor.repositories.AccountRepository;
 import com.hygatech.loan_processor.repositories.CustomerRepository;
-import com.hygatech.loan_processor.repositories.GroupRepository;
 import com.hygatech.loan_processor.utils.CustomerUtil;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class CustomerService {
     private final CustomerRepository repository;
     private final AccountRepository accountRepository;
+
+    @Transactional
     public CustomerDto create(CustomerRequestDto customerDto){
         System.out.println(customerDto);
         try {
@@ -47,6 +47,7 @@ public class CustomerService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Stream<CustomerDto> all(){
         return repository.findAll().stream().map(CustomerUtil::toDto);
     }

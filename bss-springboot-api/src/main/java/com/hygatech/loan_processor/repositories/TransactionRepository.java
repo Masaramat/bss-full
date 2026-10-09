@@ -22,4 +22,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
     Double findSumOfDepositsByAccountIdAndTrxDateGreaterThanEqual(
             @Param("account") Account account,
             @Param("trxDate") LocalDateTime trxDate);
+
+    List<Transaction> findAllByAccountAndTrxDateBetweenOrderByTrxDateAsc(
+            Account account,
+            LocalDateTime fromDate,
+            LocalDateTime toDate
+    );
 }

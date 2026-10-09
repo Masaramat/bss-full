@@ -29,6 +29,7 @@ import EditCustomer from '../features/customer/EditCustomer';
 import EditPassword from '../features/EditPassword';
 import AdasheSetup from '../features/admin/adashe/AdasheSetup';
 import AdasheCommissionReport from "../features/reports/AdasheCommissionReport.tsx";
+import AccountBalanceReport from "../features/reports/AccountBalanceReport.tsx";
 
 export const router = createBrowserRouter([
   {
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
           { path: 'report/repayment', element: <RepaymentReport /> },
           { path: 'report/transaction', element: <TransactionReport /> },
           { path: 'report/adashe/commission', element: <AdasheCommissionReport /> },
+          { path: 'report/account/balance', element: <AccountBalanceReport /> },
 
 
         ],

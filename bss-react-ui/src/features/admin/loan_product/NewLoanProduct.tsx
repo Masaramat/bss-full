@@ -73,7 +73,7 @@ const NewLoanProduct = () => {
 
           </div> 
           <div className='form-group'>
-            <label htmlFor="role" className="form-label">Role</label>
+            <label htmlFor="tenor" className="form-label">Default Tenor</label>
             <select className='form-control' id="" {...register("tenor")}>
                 <option value="">Select Tenor</option>
                 {Array.from({ length: 9 }, (_, i) => i + 1).map(i => (

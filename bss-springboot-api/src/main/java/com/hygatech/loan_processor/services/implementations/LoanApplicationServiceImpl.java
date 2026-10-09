@@ -35,6 +35,8 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
     private final LoanRepaymentRepository repaymentRepository;
     private final TransactionService transactionService;
     private final GroupRepository groupRepository;
+    private static final BigDecimal PAYMENT_TOLERANCE =
+            new BigDecimal("3.00");
 
     @Transactional
     @Override
@@ -492,14 +494,16 @@ public class LoanApplicationServiceImpl implements LoanApplicationService {
         );
 
         // Update status if fully paid
-        if (repayment.getTotalDue().compareTo(BigDecimal.ZERO) <= 0) {
+        if (repayment.getTotalDue().compareTo(PAYMENT_TOLERANCE) <= 0) {
             repayment.setStatus(RepaymentStatus.PAID);
+            repayment.setTotalDue(BigDecimal.ZERO);
             repayment.setPaymentDate(LocalDateTime.now());
         }
 
         // Check if loan is fully paid
-        if (loanAccount.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+        if (loanAccount.getBalance().compareTo(PAYMENT_TOLERANCE) <= 0) {
             loanAccount.setAccountStatus(AccountStatus.CLOSED);
+            loanAccount.setBalance(BigDecimal.ZERO);
             application.setStatus(LoanStatus.PAID_OFF);
         }
     }

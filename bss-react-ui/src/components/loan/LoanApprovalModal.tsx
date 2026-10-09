@@ -75,7 +75,8 @@ const LoanApprovalModal = ({
                 confirmText={isLoading ? "Processing..." : "Approve"}
                 confirmColor="bg-green-600 hover:bg-green-700"
                 loading={isLoading}
-            >
+                showConfirm={true}
+                width={""}>
                 <div className="space-y-4">
                     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                         <p className="text-yellow-700 text-sm">

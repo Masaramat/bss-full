@@ -10,6 +10,7 @@ import com.hygatech.loan_processor.utils.mappers.LoanLiquidationMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class LoanLiquidationServiceImpl implements LoanLiquidationService {
     private final ObjectValidator objectValidator;
 
     @Override
+    @Transactional
     public LoanLiquidationResponse liquidateLoan(LoanLiquidationRequest request) {
         List<LoanRepayment> repaymentList = new ArrayList<>();
         log.info("Liquidating loan with request: {}", request);

@@ -1,5 +1,4 @@
 import {useState, useEffect} from 'react';
-import DataTable from 'react-data-table-component';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { LoanApplication, Repayment } from './types';
@@ -7,10 +6,10 @@ import { APP_URL, formatCurrency, formatDate } from '../types';
 import { handleError } from '../../Helpers/ErrorHandler';
 import { useAuth } from '../../Context/useAuth';
 import { CircularProgress } from '@mui/material';
-import LoanLiquidationModal from "../../components/loan/LoanLiquidationModal";
-import LoanDisbursementButton from "../../components/loan/LoanDisbursementButton.tsx";
 import LoanApprovalModal from "../../components/loan/LoanApprovalModal.tsx";
 import LoanRejectionModal from "../../components/loan/LoanRejectionModal.tsx";
+import LoanDisbursementButton from "../../components/loan/LoanDisbursementButton.tsx";
+import LoanLiquidationModal from "../../components/loan/LoanLiquidationModal.tsx";
 
 const LoanDetails = () => {
     const [loan, setLoan] = useState<LoanApplication>();
@@ -22,6 +21,24 @@ const LoanDetails = () => {
     const location = useLocation();
     const { message } = location.state || {};
     const { user } = useAuth();
+
+    const transformRepaymentsData = (repayments: Repayment[]) => {
+        return repayments.map(repayment => ({
+            ...repayment,
+            total: repayment.total || 0,
+            totalDue: repayment.totalDue || 0,
+            totalPaid: repayment.totalPaid || 0,
+            totalInterestPaid: repayment.totalInterestPaid || 0,
+            principal: repayment.principal || 0,
+            interest: repayment.interest || 0,
+            monitoringFee: repayment.monitoringFee || 0,
+            processingFee: repayment.processingFee || 0,
+            daysOverdue: repayment.daysOverdue || 0,
+            status: repayment.status || 'PENDING',
+            maturityDate: repayment.maturityDate || new Date(),
+            paymentDate: repayment.paymentDate || new Date(),
+        }));
+    };
 
 
 
@@ -53,52 +70,6 @@ const LoanDetails = () => {
         return repayments.reduce((total, repayment) => total + repayment.totalPaid, 0);
     }
 
-    // Define columns for the data table
-    const columns = [
-        {
-            name: 'S/No',
-            selector: (row: Repayment) => row.id,
-            sortable: true,
-            width: '80px'
-        },
-        {
-            name: 'Total Amount',
-            selector: (row: Repayment) => formatCurrency(row.total),
-            sortable: true,
-        },
-        {
-            name: 'Total Due',
-            selector: (row: Repayment) => formatCurrency(row.totalDue),
-            sortable: true,
-        },
-
-        {
-            name: 'Interest Paid',
-            selector: (row: Repayment) => formatCurrency(row.totalInterestPaid),
-            sortable: true,
-        },
-
-        {
-            name: 'Total Paid',
-            selector: (row: Repayment) => formatCurrency(row.totalPaid),
-            sortable: true,
-        },
-        {
-            name: 'Status',
-            cell: (row: Repayment) => (
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(row.status)}`}>
-                    {row.status}
-                </span>
-            ),
-            sortable: true,
-        },
-        {
-            name: 'Due Date',
-            selector: (row: Repayment) => formatDate(String(row.maturityDate)),
-            sortable: true,
-        },
-    ];
-
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
@@ -107,10 +78,15 @@ const LoanDetails = () => {
                 setLoan(response?.data);
 
                 const repaymentsResponse = await axios.get(`${APP_URL}/loan-application/repayments/${loanId}`);
-                setRepayments(repaymentsResponse.data);
+                console.log(repaymentsResponse.data);
+
+                // Transform the data to ensure all fields have values
+                const transformedData = transformRepaymentsData(repaymentsResponse.data);
+                setRepayments(transformedData);
                 setIsLoading(false);
             } catch (error) {
                 handleError(error, navigate);
+                setIsLoading(false);
             }
         };
 
@@ -264,31 +240,66 @@ const LoanDetails = () => {
                         <div className="mt-6">
                             <h3 className="text-lg font-medium text-gray-900 mb-3">Repayments</h3>
                             <div className="border rounded-lg overflow-hidden">
-                                <DataTable
-                                    columns={columns}
-                                    data={repayments || []}
-                                    pagination
-                                    highlightOnHover
-                                    responsive
-                                    noDataComponent={
-                                        <div className="p-4 text-center text-gray-500">
-                                            No repayment records available
-                                        </div>
-                                    }
-                                    customStyles={{
-                                        headCells: {
-                                            style: {
-                                                backgroundColor: '#f9fafb',
-                                                fontWeight: '600',
-                                            },
-                                        },
-                                        cells: {
-                                            style: {
-                                                padding: '0.75rem',
-                                            },
-                                        },
-                                    }}
-                                />
+
+                                {repayments && repayments.length > 0 && (
+                                    <table className="min-w-full text-sm text-left">
+                                        <thead className="bg-gray-100 text-gray-700 font-semibold">
+                                        <tr>
+                                            <th className="px-3 py-2">S/No</th>
+                                            <th className="px-3 py-2">Total Amount</th>
+                                            <th className="px-3 py-2">Principal</th>
+                                            <th className="px-3 py-2">Interest</th>
+                                            <th className="px-3 py-2">Monitoring Fee</th>
+                                            <th className="px-3 py-2">Processing Fee</th>
+                                            <th className="px-3 py-2">Total Due</th>
+                                            <th className="px-3 py-2">Total Paid</th>
+                                            <th className="px-3 py-2">Interest Paid</th>
+                                            <th className="px-3 py-2">Status</th>
+                                            <th className="px-3 py-2">Due Date</th>
+                                            <th className="px-3 py-2">Payment Date</th>
+                                            <th className="px-3 py-2">Days Overdue</th>
+                                        </tr>
+                                        </thead>
+
+                                        <tbody>
+                                        {repayments.length > 0 ? (
+                                            repayments.map((row, index) => (
+                                                <tr key={index} className="border-t hover:bg-gray-50">
+                                                    <td className="px-3 py-2">{index + 1}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.total)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.principal)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.interest)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.monitoringFee)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.processingFee)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.totalDue)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.totalPaid)}</td>
+                                                    <td className="px-3 py-2">{formatCurrency(row.totalInterestPaid)}</td>
+                                                    <td className="px-3 py-2">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(row.status)}`}>
+                                                    {row.status}
+                                                </span>
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        {row.maturityDate ? formatDate(String(row.maturityDate)) : 'N/A'}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        {row.paymentDate ? formatDate(String(row.paymentDate)) : 'Not Paid'}
+                                                    </td>
+                                                    <td className="px-3 py-2">{row.daysOverdue}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={13} className="text-center py-4 text-gray-500">
+                                                    No repayment records available
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </tbody>
+                                    </table>
+
+                                )}
+
                             </div>
                         </div>
                     )}

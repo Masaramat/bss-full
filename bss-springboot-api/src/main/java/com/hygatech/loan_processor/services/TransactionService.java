@@ -1,16 +1,21 @@
 package com.hygatech.loan_processor.services;
 
+import com.hygatech.loan_processor.dtos.AccountStatementRequest;
 import com.hygatech.loan_processor.dtos.TransactionDto;
+import com.hygatech.loan_processor.dtos.TransactionResponse;
 import com.hygatech.loan_processor.entities.*;
 import com.hygatech.loan_processor.exceptions.ObjectNotFoundException;
 import com.hygatech.loan_processor.repositories.*;
+import com.hygatech.loan_processor.services.helpers.ObjectValidator;
 import com.hygatech.loan_processor.utils.GeneralUtils;
+import com.hygatech.loan_processor.utils.mappers.TransactionMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -29,9 +34,13 @@ public class TransactionService {
     private final Validator validator;
     private final AdasheSetupRepository adasheSetupRepository;
     private final AdasheCommissionRepository adasheCommissionRepository;
+    private final TransactionMapper mapper;
+
+    private final ObjectValidator objectValidator;
 
     private final UserRepository userRepository;
 
+    @Transactional
     public void createTransaction(Account account, String description, BigDecimal amount, String trxNo){
         Transaction transaction = new Transaction();
         transaction.setAccount(account);
@@ -42,6 +51,7 @@ public class TransactionService {
         repository.save(transaction);
     }
 
+    @Transactional
     public Transaction create(TransactionDto transactionDto) {
         log.info("Creating transaction: {}", transactionDto);
         String trxNo = GeneralUtils.generateTransactionNumber();
@@ -123,6 +133,18 @@ public class TransactionService {
 
         accountRepository.save(updateAccount);
         return repository.save(transaction);
+    }
+
+    @Transactional(readOnly = true)
+    public List<TransactionResponse> getAccountStatement(AccountStatementRequest request){
+        objectValidator.validateRequest(request);
+        log.info("Requesting Account statement for account id: {} from: {} to: {}", request.accountId(), request.fromDate(), request.toDate());
+        Account account = getAccount(request.accountId());
+
+        return repository.findAllByAccountAndTrxDateBetweenOrderByTrxDateAsc(account, request.fromDate(), request.toDate())
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
 

@@ -33,8 +33,8 @@ export const formatCurrency = (amount: number) => {
   };
 
 
-// export const APP_URL = 'http://localhost:8080/api/v1';
-export const APP_URL = 'http://141.98.152.84:8080/api/v1';
+export const APP_URL = 'http://localhost:8080/api/v1';
+// export const APP_URL = 'http://141.98.152.84:8080/api/v1';
 
 
 export type MonthyReport = {

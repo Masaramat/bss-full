@@ -12,11 +12,11 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class GroupService {
     private final GroupRepository repository;
 
+    @Transactional
     public GroupDto create(GroupDto groupDto){
         Group group = GroupUtil.toEntity(groupDto);
         group.setNumberOfMembers(0);

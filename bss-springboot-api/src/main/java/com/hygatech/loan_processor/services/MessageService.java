@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.Set;
@@ -21,6 +22,7 @@ public class MessageService {
 
     private final Validator validator;
 
+    @Transactional
     public Message create(Message message){
         Set<ConstraintViolation<Message>> violations = validator.validate(message);
         if(!violations.isEmpty()){
@@ -30,10 +32,12 @@ public class MessageService {
         return repository.save(message);
     }
 
+    @Transactional(readOnly = true)
     public Stream<Message> all(){
         return repository.findAll().stream();
     }
 
+    @Transactional(readOnly = true)
     public Message findByType(MessageType type){
         Optional<Message> messageOptional = repository.findMessageByType(type);
 

@@ -98,6 +98,8 @@ const LoanLiquidationModal = (
                 confirmText={isLoading ? "Processing..." : "Confirm Liquidation"}
                 confirmColor="bg-green-600 hover:bg-green-700"
                 loading={isLoading}
+                showConfirm={true}
+                width={"w-[50%]"}
             >
                 <div className="space-y-4">
                     <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
@@ -156,7 +158,6 @@ const LoanLiquidationModal = (
                                 id="interestCharged"
                                 type="number"
                                 className="form-control"
-                                readOnly
                                 {...register("interestCharged")}
                             />
                         </div>

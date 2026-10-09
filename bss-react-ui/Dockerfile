@@ -1,5 +1,5 @@
 # Step 1: Build the React application
-FROM node:18 AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -7,12 +7,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --only=production && npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
 
-# Build the application (change to `npm run build` if that's your script)
+# Build the application
 RUN npm run build
 
 # Step 2: Serve the application using Nginx

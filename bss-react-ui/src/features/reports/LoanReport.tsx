@@ -1,17 +1,17 @@
+import React, { useEffect, useRef, useState } from 'react';
 import $ from 'jquery';
 import 'datatables.net';
-import { useEffect, useRef, useState } from 'react';
 import { ReportRequest } from './types';
-
 import { endOfDay, format, startOfDay, subMonths } from 'date-fns';
 import { capitalizeFirstLetter, formatCurrency, formatDate } from '../types';
-import { CircularProgress } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import { getLoanReport } from './reportApi';
 import { LoanApplication } from '../loan/types';
-import ReactDatePicker from 'react-datepicker';
+// import ReactDatePicker from 'react-datepicker';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../../Models/User';
 import { getUsers } from '../admin/user/usersApi';
+import ReactDatePicker from "react-datepicker";
 
 const LoanReport = () => {
     const tableRef = useRef(null);
@@ -28,7 +28,7 @@ const LoanReport = () => {
 
     const formatDateString = (date: Date) => {
         if (!date) return "";
-        return date.toISOString().split('T')[0]; // 'yyyy-mm-dd'
+        return date.toISOString().split('T')[0];
     };
 
     const handleFromDateChange = (date: Date | null) => {
@@ -61,15 +61,20 @@ const LoanReport = () => {
 
     const getLoans = async (requestReport: ReportRequest) => {
         setIsLoading(true);
-        const response = await getLoanReport(requestReport, navigate);
-        setIsLoading(false);
-        setLoans(response?.data || []);
+        try {
+            const response = await getLoanReport(requestReport, navigate);
+            setLoans(response?.data || []);
+        } catch (error) {
+            console.error("Error fetching loans:", error);
+            setLoans([]);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const totalAmountApplied = loans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
     const totalAmountApproved = loans.reduce((sum, loan) => sum + (loan.amountApproved || 0), 0);
     const totalFormsFee = loans.reduce((sum, loan) => sum + (loan.formsFee || 0), 0);
-
 
     useEffect(() => {
         setAction('');
@@ -79,21 +84,27 @@ const LoanReport = () => {
         const oneMonthBack = subMonths(curDate, 1);
         setFromDate(oneMonthBack);
         setToDate(curDate);
-        const fromDate = formatLocalDateTime(oneMonthBack, 'start');
-        const toDate = formatLocalDateTime(curDate, 'end');
+        const fromDateFormatted = formatLocalDateTime(oneMonthBack, 'start');
+        const toDateFormatted = formatLocalDateTime(curDate, 'end');
 
         const newRequestReport = {
-            fromDate: fromDate,
-            toDate: toDate,
+            fromDate: fromDateFormatted,
+            toDate: toDateFormatted,
         } as unknown as ReportRequest;
 
         setLoanRequestReport(newRequestReport);
+
         const getLoanUsers = async () => {
-            const response = await getUsers(navigate);
-            setUsers(response?.data);
-        }
+            try {
+                const response = await getUsers(navigate);
+                setUsers(response?.data || []);
+            } catch (error) {
+                console.error("Error fetching users:", error);
+                setUsers([]);
+            }
+        };
         getLoanUsers();
-    }, []);
+    }, [navigate]);
 
     useEffect(() => {
         if (loanRequestReport) {
@@ -148,151 +159,141 @@ const LoanReport = () => {
         };
     }, [loans, fromDate, toDate]);
 
-
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-    
-        // Construct new request report based on form values
+
         const newRequestReport = {
             status: status || null,
             action: action || null,
             actionBy: actionBy || null,
             fromDate: fromDate ? formatLocalDateTime(fromDate, 'start') : '',
             toDate: toDate ? formatLocalDateTime(toDate, 'end') : '',
-            // Add other properties based on status and dateType
         } as unknown as ReportRequest;
-    
+
         setLoanRequestReport(newRequestReport);
-        await getLoanReport(newRequestReport, navigate); // Await the async function
-    
-        // Ensure setIsLoading(false) is also called in getLoans after finishing
     };
 
-
-    let content = <div></div>;
-
     if (isLoading) {
-        content = (
+        return (
             <div className="w-full h-full flex justify-center items-center">
                 <CircularProgress />
             </div>
         );
-    } else {
-        content = (
-            <div className='m-5 rounded-lg border h-fit border-primary'>
-                <div className='grid grid-cols-2 bg-secondary p-3 text-white'>
-                    <div className='col-span-1 text-lg mt-1'><h3>Loans Report</h3></div>
-                </div>
-                <div className='p-3'>
-                    <form className="my-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm font-montserrat"
-                          onSubmit={handleSubmit}>
-                        <div>
-                            <label htmlFor="">Status: </label>
-                            <select value={status} className="form-control" onChange={handleStatusSelect}>
-                                <option value="">All Status</option>
-                                <option value="PENDING">Pending</option>
-                                <option value="APPROVED">Approved</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="PAID_OFF">Paid off</option>
-                                <option value="REJECTED">Rejected</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="">Action: </label>
-                            <select value={action} className="form-control" onChange={handleActionSelect}>
-                                <option value="">None</option>
-                                <option value="applied">Applied By</option>
-                                <option value="approved">Approved By</option>
-                                <option value="disbursed">Disbursed By</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="">Action By: </label>
-                            <select value={actionBy} className="form-control" onChange={handleActionBySelect}>
-                                <option value="">None</option>
-                                {users.map((user: UserProfile) => (
-                                    <option key={user.id} value={user.id}>{user.username}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="datepicker">Start Date: </label>
-                            <ReactDatePicker
-                                selected={fromDate}
-                                onChange={handleFromDateChange}
-                                dateFormat="yyyy-MM-dd"
-                                className="form-control"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="datepicker">End Date: </label>
-                            <ReactDatePicker
-                                selected={toDate}
-                                onChange={handleToDateChange}
-                                dateFormat="yyyy-MM-dd"
-                                className="form-control"
-                            />
-                        </div>
-                        <div className="self-end col-span-2 sm:col-span-1">
-                            <button className="form-control bg-blue-600 hover:bg-secondary text-white">Search</button>
-                        </div>
-                    </form>
-                    <table id="report" ref={tableRef}>
-                        <thead className="table-header-group">
-                        <tr>
-                            <th className="w-2">SNo</th>
-                            <th>Amount Applied</th>
-                            <th>Amount Approved</th>
-                            <th>Customer</th>
-                            <th>Days Overdue</th>
-                            <th>Applied By</th>
-                            <th>Form Fee</th>
-                            <th>Approved By</th>
-                            <th>Disbursed By</th>
-                            <th>Maturity</th>
-                            <th>Status</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {loans.map((loan: LoanApplication, index: number) => (
-                            <tr key={index}>
-                                <td>{index + 1}</td>
-                                <td>{formatCurrency(loan.amount)}</td>
-                                <td>{loan.amountApproved ? formatCurrency(loan.amountApproved) : "Pending"}</td>
-                                <td>{loan?.customer?.name}</td>
-                                <td>{loan.daysOverdue || "0"}</td>
-                                <td>{loan.appliedBy?.username}</td>
-                                <td>{formatCurrency(loan.formsFee)}</td>
-                                {/* Format form fee */}
-                                <td>{loan.approvedBy?.username || "Pending"}</td>
-                                <td>{loan.disbursedBy?.username || "Pending"}</td>
-                                <td>{loan.maturity && formatDate(String(loan?.maturity)) || "Pending"}</td>
-                                <td>{capitalizeFirstLetter(String(loan?.status))}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                        <tfoot className="font-bold">
-                        <tr>
-                            <td>Total</td>
-                            <td>{formatCurrency(totalAmountApplied)}</td>
-                            <td>{formatCurrency(totalAmountApproved)}</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td>{formatCurrency(totalFormsFee)}</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        </tfoot>
-                    </table>
-
-                </div>
-            </div>
-        );
     }
 
-    return content;
+    return (
+        <div className='m-5 rounded-lg border h-fit border-primary'>
+            <div className='grid grid-cols-2 bg-secondary p-3 text-white'>
+                <div className='col-span-1 text-lg mt-1'><h3>Loans Report</h3></div>
+            </div>
+            <div className='p-3'>
+                <form className="my-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm font-montserrat"
+                      onSubmit={handleSubmit}>
+                    <div>
+                        <label htmlFor="status">Status: </label>
+                        <select id="status" value={status} className="form-control" onChange={handleStatusSelect}>
+                            <option value="">All Status</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="PAID_OFF">Paid off</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="action">Action: </label>
+                        <select id="action" value={action} className="form-control" onChange={handleActionSelect}>
+                            <option value="">None</option>
+                            <option value="applied">Applied By</option>
+                            <option value="approved">Approved By</option>
+                            <option value="disbursed">Disbursed By</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="actionBy">Action By: </label>
+                        <select id="actionBy" value={actionBy} className="form-control" onChange={handleActionBySelect}>
+                            <option value="">None</option>
+                            {users.map((user: UserProfile) => (
+                                <option key={user.id} value={user.id}>{user.username}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="fromDate">Start Date: </label>
+                        <ReactDatePicker
+                            selected={fromDate}
+                            onChange={handleFromDateChange}
+                            dateFormat="yyyy-MM-dd"
+                            className="form-control"
+                            id="fromDate"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="toDate">End Date: </label>
+                        <ReactDatePicker
+                            selected={toDate}
+                            onChange={handleToDateChange}
+                            dateFormat="yyyy-MM-dd"
+                            className="form-control"
+                            id="toDate"
+                        />
+                    </div>
+                    <div className="self-end col-span-2 sm:col-span-1">
+                        <button type="submit" className="form-control bg-blue-600 hover:bg-secondary text-white">Search</button>
+                    </div>
+                </form>
+                <table id="report" ref={tableRef}>
+                    <thead className="table-header-group">
+                    <tr>
+                        <th className="w-2">SNo</th>
+                        <th>Amount Applied</th>
+                        <th>Amount Approved</th>
+                        <th>Customer</th>
+                        <th>Days Overdue</th>
+                        <th>Applied By</th>
+                        <th>Form Fee</th>
+                        <th>Approved By</th>
+                        <th>Disbursed By</th>
+                        <th>Maturity</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loans.map((loan: LoanApplication, index: number) => (
+                        <tr key={index}>
+                            <td>{index + 1}</td>
+                            <td>{formatCurrency(loan.amount)}</td>
+                            <td>{loan.amountApproved ? formatCurrency(loan.amountApproved) : "Pending"}</td>
+                            <td>{loan?.customer?.name}</td>
+                            <td>{loan.daysOverdue || "0"}</td>
+                            <td>{loan.appliedBy?.username}</td>
+                            <td>{formatCurrency(loan.formsFee)}</td>
+                            <td>{loan.approvedBy?.username || "Pending"}</td>
+                            <td>{loan.disbursedBy?.username || "Pending"}</td>
+                            <td>{loan.maturity && formatDate(String(loan?.maturity)) || "Pending"}</td>
+                            <td>{capitalizeFirstLetter(String(loan?.status))}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                    <tfoot className="font-bold">
+                    <tr>
+                        <td>Total</td>
+                        <td>{formatCurrency(totalAmountApplied)}</td>
+                        <td>{formatCurrency(totalAmountApproved)}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{formatCurrency(totalFormsFee)}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    );
 };
 
 export default LoanReport;

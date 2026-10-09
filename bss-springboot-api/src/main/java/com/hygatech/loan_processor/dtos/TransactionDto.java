@@ -26,6 +26,7 @@ public class TransactionDto {
     private LocalDateTime trxDate;
     @NotNull
     private BigDecimal amount;
+    private BigDecimal balance;
 
     private Long noOfDays;
     private BigDecimal commissionAmount;

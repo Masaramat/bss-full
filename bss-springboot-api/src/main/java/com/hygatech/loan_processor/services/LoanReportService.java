@@ -13,6 +13,7 @@ import com.hygatech.loan_processor.utils.LoanApplicationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.stream.Stream;
@@ -24,6 +25,7 @@ public class LoanReportService {
     private final LoanApplicationRepository repository;
     private final LoanRepaymentRepository repaymentRepository;
 
+    @Transactional(readOnly = true)
     public Stream<LoanReportResponse> findByCriteria(ReportRequest request){
         return repository.findAll(LoanSpecifications.byCriteria(
                 request.getStatus(),
@@ -35,6 +37,7 @@ public class LoanReportService {
 
     }
 
+    @Transactional(readOnly = true)
     public Stream<LoanRepayment> repaymentReportByCriteria(RepaymentReportRequest request){
         return repaymentRepository.findAll(RepaymentSpecification.byCriteria(
                 request.getStatus(),
@@ -44,12 +47,14 @@ public class LoanReportService {
         )).stream();
     }
 
+    @Transactional(readOnly = true)
     public Stream<MonthlyRepaymentDTO> getMonthlyYearInterest(){
         int currentYear = LocalDate.now().getYear();
         return repaymentRepository.findMonthlyInterestByYear(currentYear).stream();
 
     }
 
+    @Transactional(readOnly = true)
     public Stream<MonthlyRepaymentDTO> getMonthlyYearFees(){
         int currentYear = LocalDate.now().getYear();
         System.out.println("Current year: " + currentYear);

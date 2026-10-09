@@ -14,6 +14,7 @@ import {toast} from 'react-toastify';
 import {useAuth} from '../../Context/useAuth';
 import {Avatar, CircularProgress} from '@mui/material';
 import {deepPurple} from '@mui/material/colors';
+import AccountStatementModal from "../../components/AccountStatementModal.tsx";
 
 type TransactionFormInputs = {
   amount: number;
@@ -332,6 +333,11 @@ const CustomerDetail = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loan
                         Cycle
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+
+
                     </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -356,6 +362,10 @@ const CustomerDetail = () => {
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                             {account.loanCycle || 0}
                           </td>
+
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            <AccountStatementModal account={account} />
+                          </td>
                         </tr>
                     ))}
                     </tbody>
@@ -373,6 +383,8 @@ const CustomerDetail = () => {
                 confirmText={trxType === 'credit' ? "Deposit" : "Withdraw"}
                 confirmColor={trxType === 'credit' ? "bg-blue-600" : "bg-red-600"}
                 loading={transactionProcessing}
+                width={"w-[30%]"}
+                showConfirm={true}
             >
               <div className="space-y-4">
                 <div>

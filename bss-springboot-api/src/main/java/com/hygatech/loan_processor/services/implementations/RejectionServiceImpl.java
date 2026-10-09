@@ -12,6 +12,7 @@ import com.hygatech.loan_processor.utils.mappers.RejectionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ public class RejectionServiceImpl implements RejectionService {
 
 
     @Override
+    @Transactional
     public RejectionResponse reject(RejectionRequest rejectionRequest) {
         log.info("Rejecting loan with request: {}", rejectionRequest);
         objectValidator.validateRequest(rejectionRequest);

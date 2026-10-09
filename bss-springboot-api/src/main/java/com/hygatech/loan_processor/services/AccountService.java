@@ -10,6 +10,7 @@ import com.hygatech.loan_processor.utils.AccountUtil;
 import com.sun.source.doctree.SeeTree;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -21,6 +22,7 @@ public class AccountService {
     private final AccountRepository repository;
     private final CustomerRepository customerRepository;
 
+    @Transactional
     public AccountDto create(AccountRequestDto requestDto){
         try {
             Account account = new Account();
@@ -36,6 +38,7 @@ public class AccountService {
         }
     }
 
+    @Transactional(readOnly = true)
     public AccountDto find(Long accountId){
         Optional<Account> accountOptional = repository.findById(accountId);
         if(accountOptional.isEmpty()){

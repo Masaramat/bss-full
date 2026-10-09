@@ -33,6 +33,7 @@ export interface Transaction{
     trxNo: string;
     description: string;
     trxDate: Date;
+    balance: number;
     user: UserProfile;
 
 }

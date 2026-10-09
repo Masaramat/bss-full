@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository repository;
@@ -30,6 +29,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public ResponseEntity<AuthenticationResponse> authenticate(AuthenticationRequest request) {
         if (request.getUsername() == null || request.getPassword() == null){
             throw new RuntimeException("Username or password not entered");
@@ -56,6 +56,7 @@ public class AuthenticationService {
     }
 
 
+    @Transactional
     public ServerResponse changePassword(ChangePasswordRequest request) {
         User user = getUser(request.getUserId());
         if(!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())){
@@ -76,6 +77,7 @@ public class AuthenticationService {
     }
 
 
+    @Transactional
     public AuthenticationResponse refreshToken(TokenRefreshRequest tokenRefreshRequest) {
         String refreshToken = tokenRefreshRequest.getRefreshToken();
         if (refreshToken == null || refreshToken.isEmpty()) {

@@ -45,6 +45,24 @@ export const getCustomerAccounts = (customerId: number, navigate: NavigateFuncti
     }
 }
 
+export const getAccountStatement = (params: {
+        accountId: number;
+        fromDate: string;
+        toDate: string;
+    }) => {
+        try {
+            return axios.get(`${APP_URL}/transaction/statement`, {
+                params: {
+                    accountNumber: params.accountId,
+                    startDate: params.fromDate,
+                    endDate: params.toDate,
+                },
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
 export const getCustomer = (id: string, navigate: NavigateFunction) => {
     try{
         const data = axios.get(`${APP_URL}/customer/${id}`);

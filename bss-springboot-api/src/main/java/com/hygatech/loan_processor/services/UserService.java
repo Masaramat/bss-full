@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -26,6 +27,8 @@ public class UserService {
     private final UserRepository repository;
     private final Validator validator;
     private final PasswordEncoder passwordEncoder;
+
+    @Transactional
     public RegistrationResponse create(RegistrationRequest request){
 
 
@@ -56,6 +59,7 @@ public class UserService {
         return UserUtil.toDto(user);
     }
 
+    @Transactional
     public UserDto update(Long id, UserDto userDto) {
 
         User existingUser = getUser(id);
@@ -86,6 +90,7 @@ public class UserService {
         return UserUtil.toDto(repository.save(existingUser));
     }
 
+    @Transactional
     public UserDto changePassword(ChangePasswordRequest request){
         User user = getUser(request.getUserId());
         System.out.println(request);
@@ -105,10 +110,12 @@ public class UserService {
 
 
 
+    @Transactional
     public void delete(Long id) {
 
     }
 
+    @Transactional
     public ServerResponse adminChangePassword(ChangePasswordRequest request) {
         if (request.getPassword() == null){
             throw new IncorrectPasswordException("Password Absent");
@@ -126,7 +133,7 @@ public class UserService {
                 .build();
     }
 
-
+    @Transactional
     public ServerResponse disableUser(Long id) {
         User user = getUser(id);
         user.setIsEnabled(false);
@@ -144,6 +151,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public ServerResponse enableUser(Long id) {
         User user = getUser(id);
         user.setIsEnabled(true);

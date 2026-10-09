@@ -7,6 +7,7 @@ import com.hygatech.loan_processor.repositories.LoanProductRepository;
 import com.hygatech.loan_processor.utils.LoanProductUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
 public class LoanProductService {
     private final LoanProductRepository repository;
 
+    @Transactional
     public LoanProductDto create(LoanProductDto productDto){
         try{
             LoanProduct product = LoanProductUtil.toEntity(productDto);
@@ -27,15 +29,18 @@ public class LoanProductService {
 
     }
 
+    @Transactional
     public Stream<LoanProductDto> all(){
         return repository.findAll().stream().map(LoanProductUtil::toDto);
     }
 
+    @Transactional(readOnly = true)
     public LoanProductDto find(Long id){
         return LoanProductUtil.toDto(getLoanProduct(id));
 
     }
 
+    @Transactional
     public LoanProductDto update(LoanProductDto dto){
         LoanProduct product = getLoanProduct(dto.getId());
         if (dto.getName() != null){
